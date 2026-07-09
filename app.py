@@ -356,6 +356,21 @@ def is_fcf_photo_summary(summary):
     return bool(re.search(r"\bfoto\s*(de\s*)?fcf\b", text))
 
 
+def summary_mentions_fcf_or_spokesperson(summary):
+    text = normalize_text(summary)
+    if not text:
+        return False
+    patterns = [
+        r"\bfcf\b",
+        r"\bfederacion colombiana de futbol\b",
+        r"\bfederacion colombiana\b",
+        r"\bfederacion colombia\b",
+        r"\bramon jesurun\b",
+        r"\bjesurun\b",
+    ]
+    return any(re.search(pattern, text) for pattern in patterns)
+
+
 def title_case_label(text):
     clean = " ".join(str(text).strip().split())
     if not clean:
@@ -398,9 +413,6 @@ def find_rival_selection(norm):
             alias_norm = normalize_text(alias)
             rival_pattern = re.escape(alias_norm)
             patterns = [
-                rf"\b(?:ante|contra)\s+(?:la\s+seleccion\s+de\s+|seleccion\s+de\s+|seleccion\s+)?{rival_pattern}\b",
-                rf"\bfrente\s+a\s+(?:la\s+seleccion\s+de\s+|seleccion\s+de\s+|seleccion\s+)?{rival_pattern}\b",
-                rf"\bvs\.?\s+{rival_pattern}\b",
                 rf"\b{rival_pattern}\s+vs\.?\s+{colombia_pattern}\b",
                 rf"\b{colombia_pattern}\s+vs\.?\s+{rival_pattern}\b",
                 rf"\b{colombia_pattern}\s+[-–]\s+{rival_pattern}\b",
@@ -419,14 +431,15 @@ def detect_partido_subtema(text):
     if not is_partido_context(norm):
         return None
 
+    if re.search(r"\b(copa del mundo|copa mundial|copa mundo|mundial 2026|mundial)\b", norm):
+        return "Partidos del Mundial"
+    if re.search(r"\b(eliminatoria|eliminatorias|clasificatorio|clasificatorias)\b", norm):
+        return "Partido Eliminatorias"
+
     rival = find_rival_selection(norm)
     if rival:
         return f"Partido ante {rival}"
 
-    if re.search(r"\b(copa del mundo|copa mundial|copa mundo|mundial 2026|mundial)\b", norm):
-        return "Partido Mundial 2026"
-    if re.search(r"\b(eliminatoria|eliminatorias|clasificatorio|clasificatorias)\b", norm):
-        return "Partido Eliminatorias"
     return None
 
 
@@ -440,8 +453,9 @@ def normalize_subtema_fcf(text, tema, subtema):
         "partido de mundial", "partido del mundial", "juego mundial",
         "encuentro mundial", "partido copa mundo", "partido copa mundial",
         "partido de copa del mundo", "partido del copa del mundo",
+        "partidos del mundial", "partidos mundial", "partidos copa del mundo",
     }:
-        return "Selecciones", "Partido Mundial 2026"
+        return "Selecciones", "Partidos del Mundial"
     if generic in {"partido eliminatorias", "partido eliminatoria", "juego eliminatorias"}:
         return "Selecciones", "Partido Eliminatorias"
     return tema, subtema
@@ -461,13 +475,13 @@ def choose_group_partido_subtema(row_texts):
     if not detected:
         return None
 
+    if any(item == "Partidos del Mundial" for item in detected):
+        return "Partidos del Mundial"
     rival_labels = sorted({item for item in detected if item.startswith("Partido ante ")})
     if len(rival_labels) == 1:
         return rival_labels[0]
     if len(rival_labels) > 1:
         return None
-    if any(item == "Partido Mundial 2026" for item in detected):
-        return "Partido Mundial 2026"
     if any(item == "Partido Eliminatorias" for item in detected):
         return "Partido Eliminatorias"
     return None
@@ -573,9 +587,8 @@ TEMA:
 SUBTEMA:
 - Debe ser una etiqueta breve y especifica basada en el hecho central.
 - No generalices. Noticias iguales o muy similares deben poder compartir el mismo subtema.
-- Si la noticia es sobre un partido de Colombia en Mundial, Copa del Mundo o Mundial 2026, evita separar artificialmente "Partido Mundial", "Partido Copa del Mundo" y "Partido Mundial 2026".
-- Cuando el rival aparezca en el texto, usa el formato "Partido ante [seleccion]" para agrupar con precision. Ejemplos: "Partido ante Argentina", "Partido ante Brasil".
-- Si no aparece rival claro, usa "Partido Mundial 2026" para Mundial, Copa del Mundo, Copa Mundo o Mundial 2026.
+- Si la noticia es sobre partidos del Mundial, Copa del Mundo, Copa Mundo o Mundial 2026, usa exactamente "Partidos del Mundial" sin mencionar selecciones rivales.
+- No pongas "Partido ante [seleccion]" en noticias del Mundial aunque aparezca una seleccion en el texto.
 - Usa nombres concretos cuando ayuden: "Designacion arbitral", "Convocatoria Seleccion Colombia", "Foto", "Comunicado FCF", etc.
 
 TEXTO:
@@ -623,7 +636,17 @@ def process_dataframe(df, title_col, summary_col, medio_col, web_col, hyperlinks
         result.at[row_idx, OUTPUT_SUBTEMA_COL] = "-"
         result.at[row_idx, OUTPUT_VOCERO_COL] = "-"
 
-    active_indices = [idx for idx in result.index if idx not in duplicate_rows]
+    logo_rows = {
+        idx for idx in result.index
+        if idx not in duplicate_rows and not summary_mentions_fcf_or_spokesperson(result.at[idx, summary_col])
+    }
+    for row_idx in logo_rows:
+        result.at[row_idx, OUTPUT_TONO_COL] = "Neutro"
+        result.at[row_idx, OUTPUT_TEMA_COL] = "Institucional"
+        result.at[row_idx, OUTPUT_SUBTEMA_COL] = "Logo"
+        result.at[row_idx, OUTPUT_VOCERO_COL] = "Sin vocero"
+
+    active_indices = [idx for idx in result.index if idx not in duplicate_rows and idx not in logo_rows]
     if not active_indices:
         progress.progress(1.0, "Completado")
         return result, len(duplicate_rows)
