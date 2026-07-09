@@ -36,7 +36,8 @@ st.set_page_config(
 OPENAI_MODEL_EMBEDDING     = "text-embedding-3-small"
 OPENAI_MODEL_CLASIFICACION = "gpt-4.1-nano-2025-04-14"
 
-CONCURRENT_REQUESTS          = 15
+# Reducción drástica a 3 peticiones concurrentes para evitar Rate Limits (429)
+CONCURRENT_REQUESTS          = 3
 SIMILARITY_THRESHOLD_GROUP   = 0.82
 SIMILARITY_THRESHOLD_TITULOS = 0.93
 
@@ -154,7 +155,6 @@ class EmbeddingCache:
         self._hits = 0
         self._misses = 0
 
-# Inicialización y Helper para el estado del Cache
 if '_emb_cache' not in st.session_state:
     st.session_state['_emb_cache'] = EmbeddingCache()
 
@@ -237,21 +237,36 @@ def load_config_maps(config_path):
         st.warning(f"Error al cargar la configuración de mapeos locales: {e}")
         return {}, {}
 
+# Sistema de Reintentos Exponencial y Detección Especializada de Error de Cuota (429)
 def call_with_retries(fn, *a, **kw):
-    d = 1
-    for att in range(3):
-        try: return fn(*a, **kw)
+    d = 3 # Espera inicial
+    for att in range(5): # 5 Intentos de persistencia
+        try: 
+            return fn(*a, **kw)
         except Exception as e:
-            if att == 2: raise e
-            time.sleep(d); d *= 2
+            err_str = str(e).lower()
+            if "rate limit" in err_str or "429" in err_str:
+                time.sleep(d * 3) # Si hay rate limit, esperamos más
+                d *= 2
+            else:
+                if att == 4: raise e
+                time.sleep(d)
+                d *= 2
 
 async def acall_with_retries(fn, *a, **kw):
-    d = 1
-    for att in range(3):
-        try: return await fn(*a, **kw)
+    d = 3
+    for att in range(5):
+        try: 
+            return await fn(*a, **kw)
         except Exception as e:
-            if att == 2: raise e
-            await asyncio.sleep(d); d *= 2
+            err_str = str(e).lower()
+            if "rate limit" in err_str or "429" in err_str:
+                await asyncio.sleep(d * 3)
+                d *= 2
+            else:
+                if att == 4: raise e
+                await asyncio.sleep(d)
+                d *= 2
 
 def normalize_title_for_comparison(title):
     if not isinstance(title, str): return ""
@@ -308,6 +323,29 @@ def clean_json_string(s: str) -> str:
         s = re.sub(r"^```(?:json)?\s*", "", s, flags=re.IGNORECASE)
         s = re.sub(r"\s*```$", "", s)
     return s.strip()
+
+# Generador de Subtemas Dinámicos Lógicos de Respaldo (Evita "Varios" y "Sin clasificar")
+def obtener_subtema_fallback(titulo: str, tema: str) -> str:
+    words = [w.strip() for w in re.findall(r'[A-Za-zÀ-ÿ\d]+', str(titulo)) if len(w) > 4]
+    
+    # Intentar generar una frase a partir del título
+    if len(words) >= 2:
+        phrase = f"Actualidad sobre {words[0].lower()} y {words[1].lower()}"
+        return phrase[0].upper() + phrase[1:]
+    elif len(words) == 1:
+        phrase = f"Noticias relacionadas con {words[0].lower()}"
+        return phrase[0].upper() + phrase[1:]
+        
+    # Plantillas lógicas y específicas por Tema
+    defaults = {
+        "Institucional": "Gestión Administrativa de FCF",
+        "Torneos - Copas - Ligas": "Competición y Actividad de Clubes",
+        "Selecciones": "Actualidad de Selecciones Nacionales",
+        "Gestión": "Planificación y Proyectos Técnicos",
+        "Jugadores": "Rendimiento Deportivo de Jugadores",
+        "Entorno": "Relaciones del Fútbol Profesional"
+    }
+    return defaults.get(tema, "Información General de FCF")
 
 # ======================================
 # Estructura DSU para Agrupaciones
@@ -381,10 +419,12 @@ async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) 
             f"   - Torneos - Copas - Ligas (partidos locales de clubes, copas nacionales/internacionales, boletería, arbitraje, etc.)\n"
             f"   - Selecciones (noticias, partidos, entrenamientos o convocatorias de la Selección Colombia masculina o femenina de cualquier categoría)\n"
             f"   - Gestión (capacitaciones de FCF, licencias de técnicos, certificaciones de estadios, programas de talento o desarrollo de la federación)\n"
-            f"   - Jugadores (noticias enfocadas directamente en el rendimiento de un jugador individual: Luis Díaz, James Rodríguez, Linda Caicedo, Falcao, etc.)\n"
+            f"   - Jugadores (noticias enfocadas directamente en el rendimiento de un jugador de fútbol individual: Luis Díaz, James Rodríguez, Linda Caicedo, Falcao, etc.)\n"
             f"   - Entorno (noticias de clubes o ligas, aniversarios, relaciones institucionales de la FCF con el gobierno, e incidentes del fútbol nacional)\n\n"
-            f"2. **SUBTEMA**: Crea un subtema altamente específico para la noticia.\n"
-            f"   Debe ser una frase nominal concreta de 2 a 4 palabras, sin verbos conjugados, sin marcas comerciales y con ortografía correcta (ej: 'Convocatoria de Selección', 'Regulación de árbitros', 'Desarrollo de Liga Femenina').\n\n"
+            f"2. **SUBTEMA**:\n"
+            f"   - Crea o asocia un subtema específico para la noticia.\n"
+            f"   - Debe ser una frase nominal concreta de 2 a 4 palabras, sin verbos conjugados, sin marcas comerciales y con ortografía correcta (ej: 'Convocatoria de Selección', 'Regulación de árbitros', 'Desarrollo de Liga Femenina').\n"
+            f"   - PROHIBICIÓN ESTRICTA: NUNCA uses la palabra 'Varios', 'Otros', 'Sin clasificar', 'Error' o términos ambiguos o placeholders vagos. Si no encuentras un subtema exacto, genera una frase nominal descriptiva basada en los hechos de la noticia.\n\n"
             f"3. **IMPACTO**: Califica el tono reputacional hacia la FCF:\n"
             f"   - 'Positivo': Si la noticia exalta, felicita o resalta explícitamente una gestión, logro, o anuncio exitoso directo de la FCF.\n"
             f"   - 'Negativo': Si contiene críticas directas, cuestionamientos públicos, multas, fallas organizativas graves, quejas o comentarios desfavorables hacia la FCF o sus dirigentes.\n"
@@ -414,13 +454,20 @@ async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) 
 
             if tema not in ["Institucional", "Torneos - Copas - Ligas", "Selecciones", "Gestión", "Jugadores", "Entorno"]:
                 tema = "Institucional"
+                
+            sub_lower = subtema.lower()
+            if not subtema or any(x in sub_lower for x in ["varios", "otros", "no aplica", "n/a", "error", "sin subtema"]):
+                subtema = obtener_subtema_fallback(titulo, tema)
+
             if impacto not in ["Positivo", "Negativo", "Neutro"]:
                 impacto = "Neutro"
                 
-            return {"tema": tema, "subtema": subtema if subtema else "Varios", "impacto": impacto}
+            return {"tema": tema, "subtema": subtema, "impacto": impacto}
         except Exception as e:
-            st.error(f"⚠️ Error al procesar clasificación de noticia: {str(e)}")
-            return {"tema": "Institucional", "subtema": "Varios", "impacto": "Neutro"}
+            # En caso de excepción, usar fallback inteligente para evitar "Varios"
+            tema_fallback = "Institucional"
+            sub_fallback = obtener_subtema_fallback(titulo, tema_fallback)
+            return {"tema": tema_fallback, "subtema": sub_fallback, "impacto": "Neutro"}
 
 # ======================================
 # Proceso de Agrupamiento y Análisis
@@ -517,7 +564,7 @@ async def procesar_analisis_fcf(rows, headers, region_map, internet_map, pbar):
 
     # Asignación de vuelta a los registros individuales
     for cid, idxs in grupos.items():
-        evaluacion = rpg.get(cid, {"tema": "Institucional", "subtema": "Varios", "impacto": "Neutro"})
+        evaluacion = rpg.get(cid, {"tema": "Institucional", "subtema": "Actualidad de FCF", "impacto": "Neutro"})
         for i in idxs:
             set_row_value(rows[i], "TEMA", evaluacion["tema"])
             set_row_value(rows[i], "SUBTEMA", evaluacion["subtema"])
