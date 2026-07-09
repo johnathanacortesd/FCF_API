@@ -26,7 +26,7 @@ La app busca `Configuracion.xlsx` automaticamente dentro del repo y actualiza `R
 
 Si el resumen contiene `Foto: FCF`, `Foto:FCF`, `Foto FCF`, `Tomado de FCF` o una variante equivalente, la fila queda como `Neutro`, `Institucional` y `Foto`.
 
-Si `RESUMEN` no menciona `FCF`, `Federación Colombiana de Fútbol`, `Federación Colombiana` ni `Ramón Jesurun`/`Jesurun`, la fila no se envia al modelo y queda como `Neutro`, `Institucional` y `Logo`. La palabra `Federación` sola no cuenta como mención válida.
+Si ni `TÍTULO` ni `RESUMEN` mencionan `FCF`, `Federación Colombiana de Fútbol`, `Federación Colombiana` ni `Ramón Jesurun`/`Jesurun`, la fila no se envia al modelo y queda como `Neutro`, `Institucional` y `Logo`. La palabra `Federación` sola no cuenta como mención válida.
 
 La descarga conserva los hipervinculos incrustados en la palabra `Link` para las columnas `LINK` y `WEB`.
 
