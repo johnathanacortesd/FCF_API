@@ -36,7 +36,7 @@ st.set_page_config(
 OPENAI_MODEL_EMBEDDING     = "text-embedding-3-small"
 OPENAI_MODEL_CLASIFICACION = "gpt-4.1-nano-2025-04-14"
 
-# Reducción drástica a 3 peticiones concurrentes para evitar Rate Limits (429)
+# Concurrencia controlada para evitar Rate Limits (429)
 CONCURRENT_REQUESTS          = 3
 SIMILARITY_THRESHOLD_GROUP   = 0.82
 SIMILARITY_THRESHOLD_TITULOS = 0.93
@@ -48,6 +48,19 @@ PRICE_EMBEDDING_1M = 0.02
 if 'tokens_input' not in st.session_state: st.session_state['tokens_input']     = 0
 if 'tokens_output' not in st.session_state: st.session_state['tokens_output']    = 0
 if 'tokens_embedding' not in st.session_state: st.session_state['tokens_embedding'] = 0
+
+STOPWORDS_ES = set("""
+a ante bajo cabe con contra de desde durante en entre hacia hasta mediante
+para por segun sin so sobre tras y o u e la el los las un una unos unas lo
+al del se su sus le les mi mis tu tus nuestro nuestros vuestra vuestras este
+esta estos estas ese esa esos esas aquel aquella aquellos aquellas que cual
+cuales quien quienes cuyo cuya cuyos cuyas como cuando donde cual es son fue
+fueron era eran sera seran seria serian he ha han habia han hay hubo habra
+habria estoy esta estan estaba estaban estamos estan estar estare estaria
+estuvieron estarian estuvo asi ya mas menos tan tanto cada muy todo toda todos
+todas ser haber hacer tener poder deber ir dar ver saber querer llegar pasar
+encontrar creer decir poner salir volver seguir llevar sentir cambiar contra
+""".split())
 
 # ======================================
 # Adaptadores de Compatibilidad OpenAI (v0.x y v1.x)
@@ -239,14 +252,14 @@ def load_config_maps(config_path):
 
 # Sistema de Reintentos Exponencial y Detección Especializada de Error de Cuota (429)
 def call_with_retries(fn, *a, **kw):
-    d = 3 # Espera inicial
-    for att in range(5): # 5 Intentos de persistencia
+    d = 3
+    for att in range(5):
         try: 
             return fn(*a, **kw)
         except Exception as e:
             err_str = str(e).lower()
             if "rate limit" in err_str or "429" in err_str:
-                time.sleep(d * 3) # Si hay rate limit, esperamos más
+                time.sleep(d * 3)
                 d *= 2
             else:
                 if att == 4: raise e
@@ -328,7 +341,6 @@ def clean_json_string(s: str) -> str:
 def obtener_subtema_fallback(titulo: str, tema: str) -> str:
     words = [w.strip() for w in re.findall(r'[A-Za-zÀ-ÿ\d]+', str(titulo)) if len(w) > 4]
     
-    # Intentar generar una frase a partir del título
     if len(words) >= 2:
         phrase = f"Actualidad sobre {words[0].lower()} y {words[1].lower()}"
         return phrase[0].upper() + phrase[1:]
@@ -336,7 +348,6 @@ def obtener_subtema_fallback(titulo: str, tema: str) -> str:
         phrase = f"Noticias relacionadas con {words[0].lower()}"
         return phrase[0].upper() + phrase[1:]
         
-    # Plantillas lógicas y específicas por Tema
     defaults = {
         "Institucional": "Gestión Administrativa de FCF",
         "Torneos - Copas - Ligas": "Competición y Actividad de Clubes",
@@ -346,6 +357,94 @@ def obtener_subtema_fallback(titulo: str, tema: str) -> str:
         "Entorno": "Relaciones del Fútbol Profesional"
     }
     return defaults.get(tema, "Información General de FCF")
+
+def string_norm_label(s):
+    if not s: return ""
+    s = unidecode(s.lower())
+    s = re.sub(r"[^a-z0-9\s]", " ", s)
+    return " ".join(t for t in s.split() if t not in STOPWORDS_ES)
+
+# ======================================
+# Consolidación de Subtemas (Deduplicación)
+# ======================================
+def dedup_labels(etiquetas: List[str], umbral: float = 0.82) -> List[str]:
+    unique = list(dict.fromkeys(etiquetas))
+    if len(unique) <= 1:
+        return etiquetas
+    normed = [string_norm_label(u) for u in unique]
+    n = len(unique)
+    parent = list(range(n))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb: parent[rb] = ra
+
+    for i in range(n):
+        if not normed[i]: continue
+        for j in range(i + 1, n):
+            if not normed[j] or find(i) == find(j): continue
+            if SequenceMatcher(None, normed[i], normed[j]).ratio() >= umbral:
+                union(i, j)
+                    
+    le = get_embeddings_batch(unique)
+    vp = [(i, le[i]) for i in range(n) if le[i] is not None]
+    if len(vp) >= 2:
+        vi, vv = zip(*vp)
+        sm = cosine_similarity(np.array(vv))
+        for pi in range(len(vi)):
+            for pj in range(pi + 1, len(vi)):
+                if sm[pi][pj] >= umbral:
+                    if find(vi[pi]) != find(vi[pj]):
+                        union(vi[pi], vi[pj])
+
+    freq = Counter(etiquetas)
+    grupos = defaultdict(list)
+    for i in range(n):
+        grupos[find(i)].append(i)
+    canon = {}
+    for root, members in grupos.items():
+        cands = [unique[m] for m in members]
+        canon[root] = max(cands, key=lambda c: (freq[c], len(c)))
+    lm = {unique[i]: canon[find(i)] for i in range(n)}
+    return [lm.get(e, e) for e in etiquetas]
+
+def consolidar_sinonimos_llm(subtemas_unicos: List[str]) -> Dict[str, str]:
+    if len(subtemas_unicos) <= 1:
+        return {s: s for s in subtemas_unicos}
+        
+    prompt = (
+        "Eres un analista de datos experto en taxonomías de fútbol.\n"
+        "Tienes la siguiente lista de subtemas periodísticos generados para noticias de la FCF:\n"
+        f"{', '.join(subtemas_unicos)}\n\n"
+        "Tu tarea consiste en identificar aquellos subtemas que se refieren exactamente al MISMO EVENTO, PARTIDO o CONCEPTO "
+        "y unificarlos bajo un único nombre representativo, claro y conciso.\n\n"
+        "REGLAS:\n"
+        "1. Agrupa variantes de partidos, análisis previos, rivales, etc. del mismo encuentro en un único subtema estructurado como: 'Partido Colombia vs [Rival]'\n"
+        "   Ejemplo: 'Análisis de Portugal', 'Partido contra Portugal', 'Análisis previo Colombia-Portugal' deben unificarse todos en: 'Partido Colombia vs Portugal'.\n"
+        "2. No fusiones conceptos que pertenezcan a eventos o categorías claramente distintas.\n"
+        "3. Devuelve EXCLUSIVAMENTE un objeto JSON donde las claves sean los subtemas originales y los valores sean los subtemas unificados.\n\n"
+        "Esquema JSON esperado:\n"
+        '{"Subtema Original 1": "Subtema Unificado", "Subtema Original 2": "Subtema Unificado"}'
+    )
+    try:
+        content, _, _ = call_with_retries(
+            async_chat_completion,
+            model=OPENAI_MODEL_CLASIFICACION,
+            messages=[{"role": "user", "content": prompt}],
+            max_tokens=1500,
+            temperature=0.0,
+            response_format={"type": "json_object"}
+        )
+        cleaned = clean_json_string(content)
+        return json.loads(cleaned)
+    except Exception as e:
+        return {s: s for s in subtemas_unicos}
 
 # ======================================
 # Estructura DSU para Agrupaciones
@@ -378,33 +477,6 @@ class DSU:
 # ======================================
 # Llamadas de Embeddings y Clasificación
 # ======================================
-def get_embeddings_batch(textos, batch_size=100):
-    if not textos: return []
-    cache = get_embedding_cache()
-    resultados, missing = cache.get_many(textos)
-    if not missing: return resultados
-    mt = [textos[i][:2000] if textos[i] else "" for i in missing]
-    for i in range(0, len(mt), batch_size):
-        batch = mt[i:i + batch_size]
-        bidx = missing[i:i + batch_size]
-        try:
-            embs, total_tokens = call_with_retries(sync_embedding_create, batch, OPENAI_MODEL_EMBEDDING)
-            st.session_state['tokens_embedding'] += total_tokens
-            for j, emb in enumerate(embs):
-                oi = bidx[j]
-                resultados[oi] = emb
-                cache.put(textos[oi], emb)
-        except Exception as e:
-            st.error(f"⚠️ Error al generar embeddings: {str(e)}")
-            for j, t in enumerate(batch):
-                oi = bidx[j]
-                try:
-                    embs_single, total_tokens_single = sync_embedding_create([t], OPENAI_MODEL_EMBEDDING)
-                    resultados[oi] = embs_single[0]
-                    cache.put(textos[oi], embs_single[0])
-                except: pass
-    return resultados
-
 async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) -> dict:
     async with sem:
         prompt = (
@@ -418,17 +490,17 @@ async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) 
             f"   - Institucional (asuntos de la FCF como organización, finanzas, patrocinadores, asambleas de la FCF, decisiones ejecutivas)\n"
             f"   - Torneos - Copas - Ligas (partidos locales de clubes, copas nacionales/internacionales, boletería, arbitraje, etc.)\n"
             f"   - Selecciones (noticias, partidos, entrenamientos o convocatorias de la Selección Colombia masculina o femenina de cualquier categoría)\n"
-            f"   - Gestión (capacitaciones de FCF, licencias de técnicos, certificaciones de estadios, programas de talento o desarrollo de la federación)\n"
-            f"   - Jugadores (noticias enfocadas directamente en el rendimiento de un jugador de fútbol individual: Luis Díaz, James Rodríguez, Linda Caicedo, Falcao, etc.)\n"
-            f"   - Entorno (noticias de clubes o ligas, aniversarios, relaciones institucionales de la FCF con el gobierno, e incidentes del fútbol nacional)\n\n"
+            f"   - Gestión (capacitaciones de FCF, licencias de técnicos, de estadios, programas de talento o desarrollo de la federación)\n"
+            f"   - Jugadores (noticias enfocadas en el rendimiento, transferencias o actualidad de futbolistas individuales: Luis Díaz, James, etc.)\n"
+            f"   - Entorno (noticias de clubes o ligas, aniversarios, relaciones de la FCF con el gobierno, e incidentes del fútbol nacional)\n\n"
             f"2. **SUBTEMA**:\n"
             f"   - Crea o asocia un subtema específico para la noticia.\n"
-            f"   - Debe ser una frase nominal concreta de 2 a 4 palabras, sin verbos conjugados, sin marcas comerciales y con ortografía correcta (ej: 'Convocatoria de Selección', 'Regulación de árbitros', 'Desarrollo de Liga Femenina').\n"
-            f"   - PROHIBICIÓN ESTRICTA: NUNCA uses la palabra 'Varios', 'Otros', 'Sin clasificar', 'Error' o términos ambiguos o placeholders vagos. Si no encuentras un subtema exacto, genera una frase nominal descriptiva basada en los hechos de la noticia.\n\n"
+            f"   - Debe ser una frase nominal concreta de 2 a 4 palabras, sin verbos conjugados, sin marcas comerciales y con ortografía correcta.\n"
+            f"   - PROHIBICIÓN ESTRICTA: NUNCA uses la palabra 'Varios', 'Otros', 'Sin clasificar', 'Error' o términos placeholders. Si no encuentras un subtema exacto, genera una frase nominal descriptiva basada en el hecho central.\n\n"
             f"3. **IMPACTO**: Califica el tono reputacional hacia la FCF:\n"
-            f"   - 'Positivo': Si la noticia exalta, felicita o resalta explícitamente una gestión, logro, o anuncio exitoso directo de la FCF.\n"
-            f"   - 'Negativo': Si contiene críticas directas, cuestionamientos públicos, multas, fallas organizativas graves, quejas o comentarios desfavorables hacia la FCF o sus dirigentes.\n"
-            f"   - 'Neutro': Información de partidos, crónicas ordinarias de resultados, fichajes, convocatorias regulares o mención puramente periodística donde no se exalta ni se critica directamente a la FCF.\n\n"
+            f"   - 'Positivo': Si la noticia resalta explícitamente una gestión, logro, o anuncio exitoso directo de la FCF.\n"
+            f"   - 'Negativo': Si contiene críticas directas, cuestionamientos públicos, multas, fallas organizativas, quejas o comentarios desfavorables hacia la FCF.\n"
+            f"   - 'Neutro': Información de partidos, crónicas ordinarias de resultados, fichajes, convocatorias regulares o mención puramente periodística donde no se exalta ni se critica a la FCF.\n\n"
             f"Responde estrictamente en formato JSON con el siguiente esquema:\n"
             f'{{"tema": "...", "subtema": "...", "impacto": "Positivo|Negativo|Neutro"}}'
         )
@@ -464,7 +536,6 @@ async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) 
                 
             return {"tema": tema, "subtema": subtema, "impacto": impacto}
         except Exception as e:
-            # En caso de excepción, usar fallback inteligente para evitar "Varios"
             tema_fallback = "Institucional"
             sub_fallback = obtener_subtema_fallback(titulo, tema_fallback)
             return {"tema": tema_fallback, "subtema": sub_fallback, "impacto": "Neutro"}
@@ -478,7 +549,6 @@ async def procesar_analisis_fcf(rows, headers, region_map, internet_map, pbar):
     
     # 1. Mapeos locales rigurosos
     for row in rows:
-        # Búsqueda local de vocero en RESUMEN
         res_val = get_row_value(row, "RESUMEN") or ""
         set_row_value(row, "VOCERO", buscar_vocero(str(res_val)))
 
@@ -543,10 +613,10 @@ async def procesar_analisis_fcf(rows, headers, region_map, internet_map, pbar):
             for j in cl[1:]:
                 dsu.union(cl[0], j)
 
-    # 3. Procesamiento en Paralelo con Orden Preservado (gather)
+    # 3. Procesamiento en Paralelo de Clasificación Inicial con IA
     grupos = dsu.grupos(n)
     total_grupos = len(grupos)
-    pbar.progress(0.50, f"Clasificando {total_grupos} grupos de noticias con {OPENAI_MODEL_CLASIFICACION}...")
+    pbar.progress(0.45, f"Clasificando {total_grupos} grupos de noticias con {OPENAI_MODEL_CLASIFICACION}...")
 
     sem = asyncio.Semaphore(CONCURRENT_REQUESTS)
     tasks = []
@@ -558,11 +628,10 @@ async def procesar_analisis_fcf(rows, headers, region_map, internet_map, pbar):
         rep_resumen = str(get_row_value(rows[rep_idx], "RESUMEN") or "")
         tasks.append(clasificar_fcf_llm(rep_title, rep_resumen, sem))
 
-    # gather conserva exactamente el orden original de las tareas secuenciales
     resultados = await asyncio.gather(*tasks)
     rpg = {cids[k]: resultados[k] for k in range(len(cids))}
 
-    # Asignación de vuelta a los registros individuales
+    # Asignación inicial de clasificaciones a los registros
     for cid, idxs in grupos.items():
         evaluacion = rpg.get(cid, {"tema": "Institucional", "subtema": "Actualidad de FCF", "impacto": "Neutro"})
         for i in idxs:
@@ -570,7 +639,51 @@ async def procesar_analisis_fcf(rows, headers, region_map, internet_map, pbar):
             set_row_value(rows[i], "SUBTEMA", evaluacion["subtema"])
             set_row_value(rows[i], "Impacto", evaluacion["impacto"])
 
-    pbar.progress(1.0, "Análisis de clasificación finalizado.")
+    # 4. Pipeline de Consolidación Semántica de Subtemas
+    pbar.progress(0.85, "Consolidando subtemas similares para consistencia...")
+    subtemas_iniciales = [get_row_value(r, "SUBTEMA") for r in rows if get_row_value(r, "SUBTEMA")]
+    
+    # Capa 1 y 2: Deduplicación léxico-semántica local
+    subtemas_dedup = dedup_labels(subtemas_iniciales, umbral=0.82)
+    mapa_dedup = dict(zip(subtemas_iniciales, subtemas_dedup))
+    
+    for r in rows:
+        sub_act = get_row_value(r, "SUBTEMA")
+        if sub_act in mapa_dedup:
+            set_row_value(r, "SUBTEMA", mapa_dedup[sub_act])
+            
+    # Capa 3: Agrupación avanzada de sinónimos de partidos/eventos por IA
+    subtemas_unificados_unicos = list(set(mapa_dedup.values()))
+    mapa_sinonimos = consolidar_sinonimos_llm(subtemas_unificados_unicos)
+    
+    for r in rows:
+        sub_act = get_row_value(r, "SUBTEMA")
+        if sub_act in mapa_sinonimos:
+            set_row_value(r, "SUBTEMA", mapa_sinonimos[sub_act])
+
+    # 5. Capa 4: Homogeneización de Tema e Impacto para subtemas consolidados
+    sub_to_data = defaultdict(list)
+    for r in rows:
+        sub = get_row_value(r, "SUBTEMA")
+        tema = get_row_value(r, "TEMA")
+        imp = get_row_value(r, "Impacto")
+        sub_to_data[sub].append((tema, imp))
+        
+    sub_to_best = {}
+    for sub, items in sub_to_data.items():
+        temas = [it[0] for it in items if it[0]]
+        impactos = [it[1] for it in items if it[1]]
+        best_tema = Counter(temas).most_common(1)[0][0] if temas else "Institucional"
+        best_imp = Counter(impactos).most_common(1)[0][0] if impactos else "Neutro"
+        sub_to_best[sub] = (best_tema, best_imp)
+        
+    for r in rows:
+        sub = get_row_value(r, "SUBTEMA")
+        if sub in sub_to_best:
+            set_row_value(r, "TEMA", sub_to_best[sub][0])
+            set_row_value(r, "Impacto", sub_to_best[sub][1])
+
+    pbar.progress(1.0, "Análisis de clasificación y consolidación finalizado.")
     return rows
 
 # ======================================
