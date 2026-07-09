@@ -36,7 +36,7 @@ st.set_page_config(
 OPENAI_MODEL_EMBEDDING     = "text-embedding-3-small"
 OPENAI_MODEL_CLASIFICACION = "gpt-5-nano-2025-08-07"
 
-CONCURRENT_REQUESTS          = 25
+CONCURRENT_REQUESTS          = 20
 SIMILARITY_THRESHOLD_GROUP   = 0.82
 SIMILARITY_THRESHOLD_TITULOS = 0.93
 
@@ -47,94 +47,6 @@ PRICE_EMBEDDING_1M = 0.02
 if 'tokens_input' not in st.session_state: st.session_state['tokens_input']     = 0
 if 'tokens_output' not in st.session_state: st.session_state['tokens_output']    = 0
 if 'tokens_embedding' not in st.session_state: st.session_state['tokens_embedding'] = 0
-
-# ======================================
-# Taxonomía Oficial FCF
-# ======================================
-TAXONOMIA_FCF = {
-    "Institucional": [
-        "Comisión Arbitral de la FCF", "82° Congreso Ordinario de la CONMEBOL", "Robo en sede de la FCF en Bogotá",
-        "Circulación de procedimiento y requisitos", "Proyecto deportivo del Concejo de Bogotá", "Campeonato Nacional de Primera",
-        "Denuncias contra la FCF", "Normativa de la FIFA", "76° Congreso FIFA", "Foto", "Complejo de alto rendimiento de la Selección Colombia",
-        "Camiseta Selección Colombia visitante", "Elecciones FCF", "Canción Oficial", "Claro nuevo socio de la Selección Colombia",
-        "Proyecto excepción de impuestos", "FCF se une al sello de Carlos Vives", "Investigaciones de la SIC", "Informe de gestión",
-        "Dinero por clasificar a fase de grupos", "Patrocinadores FCF", "Reunión de jugadores con directivos", "Camiseta Selección Colombia",
-        "Circular informativa FCF", "Assist Card", "Continuidad Ramón Jesurún", "Comisión Arbitral de la Federación Colombiana de Fútbol.",
-        "Difútbol", "Comité ejecutivo de la FCF", "Asamblea Ordinaria de la Federación Colombiana de Fútbol", "Alejandro Arteta - Comité ejecutivo FCF",
-        "Alianza Fan Zones", "FCF alerta boletería falsa", "Alianza entre Avianca y la FCF", "Comisión del Estatuto del Jugador de la F.C.F",
-        "Licencias", "Federación Colombiana de Fútbol", "Bancolombia", "Cámara de Resolución de Disputas de la F.C.F",
-        "Importancia de la FCF dentro de la FIFA", "Ingresos FCF", "Tensión en la cúpula del fútbol colombiano", "Ambush marketing (mercadeo parasitario)",
-        "FCF lanza al mercado las gafas de la selección", "Logo", "Críticas a la FCF", "Ramón Jesurún", "Imer Machado",
-        "Avión oficial de la Selección Colombia", "Ramón Jesurún seguirá siendo el presidente de la FCF", "Lucha contra el contrabando",
-        "FCF lanza estrategia para que bares se acrediten como sitios oficiales", "C.D.U de la F.C.F", "Comisión Técnica de la F.C.F",
-        "Alianza FCF - Éxito", "Camiseta conmemorativa", "Críticas a Ramón Jesurún", "Comisión Disciplinaria de la FCF", "Comité Ejecutivo de la FCF"
-    ],
-    "Torneos - Copas - Ligas": [
-        "Barranquilla, sede única de la final Sudamericana 2026", "Críticas a árbitros", "Primera C 2026", "Mundial Qatar 2022",
-        "Pruebas fisicas para arbitros", "Liga BetPlay Futsal 2026", "Copa América 2028", "Acolfutpro - normativa FIFA",
-        "250 equipos llegan al Nacional de Primera C", "Campeonato Sudamericano Sub-17 Fem.", "IFAB", "Zonal nacional",
-        "Campeonato Sudamericano Sub-17", "Boletería Mundial 2026", "A 100 días para la Copa del Mundo", "SheBelieves Cup",
-        "Técnicos mejor pagos en el Mundial", "Liga Femenina de Fútbol Profesional", "Mobile del FIFAe Nations Cup 2025",
-        "La Copa Imposible", "Mundial 2026", "Tiempos de descanso", "Árbitros que están castigados en la Liga BetPlay",
-        "Boleteria Liga de Naciones Conmebol en Cali", "Lista de inscritos Liga Betplay 2026.", "Debate sobre la estructura y proyección de la selección Colombia",
-        "Federación Colombiana de Fútbol de Salón", "Liga BetPlay 2026", "Boletería Mundial 2026", "Programación Liga de Naciones",
-        "Precios boletería Liga de Naciones", "Uso del VAR", "Liga El Dorado", "She Believes Cup 2026", "Mundial de eFootball",
-        "Supercopa Juvenil de 2026", "Liga de Naciones Femenina 2025-2026", "Campeonato Nacional de Primera C", "Sorteo del Mundial de la FIFA 2026",
-        "Sudamericano sub 20 femenino", "Árbitros colombianos para el Mundial 2026", "Normativa de la Fifa", "Acreditación para medios de comunicación",
-        "Designaciones Arbitrales", "Torneo Nacional de Fútbol Sala Femenino 2026", "Zonal Nacional Interligas", "Liga Nacional de Fútbol de Salón 2026"
-    ],
-    "Selecciones": [
-        "Convocatoria S. Mas. de Fútbol Sub 15", "Amistosos antes del Mundial", "Entrenamiento estadio de Techo", "Convocatoria S. Mas. de Fútbol Sub 17",
-        "Concentración en Medellín", "Convocatoria S. Fem. de Fútbol Mayores", "S. Mas. de Fútbol Sub 15", "Fredy Hurtado", "Colombia vs Uzbekistan",
-        "Néstor Lorenzo", "Calendario de Selecciones Colombia", "Selección Colombia afina detalles rumbo al Mundial 2026", "Convocatoria Mundial 2026",
-        "Rueda de prensa Nestor Lorenzo", "Lista de los convocados al Mundial", "Convocatoria S. Mas. de Fútbol Mayores", "Cierre de preparación mundialista",
-        "Último amistoso antes de la Copa Mundo", "Plan de la Selección Colombia", "Oliver Glasner", "Convocatoria S. Fem. de Fútbol Sub 17",
-        "Sub20 de Fútbol Playa 2026", "Jornada de entrenamiento S. Mayores", "Sede de la Selección Femenina", "Ángelo Marsiglia", "Creación categoría Sub-13 Femenina",
-        "Club de la Sele", "Carlos Queiroz", "S. Fem de Fútbol Mayores", "Partido de despedida", "S. Fem de Fútbol Sub 17", "Sedes Selección Colombia",
-        "S. Fem de Fútbol Sub 15", "Deivy Mejía, entrenador de la Selección Colombia Sub 15", "Convocatoria doble fecha de amistosos",
-        "Copa Mundial Masculina Sub-17", "Selección Femenina Sub 13 de fútbol sala", "Convocatoria S. Fem. de Fútbol Sub 20", "S. Mas. de Fútbol Sub 17",
-        "Convocatoria de fútbol playa", "Ciclo de preparación mundialista", "Convocatoria S. Mas. de Fútbol Sub 16", "Convocatoria S. Mas. de Fútbol Sub 19",
-        "52 futbolistas en lista para el mundial", "Practica antes del partido de despedida", "Hexagonal final S. Fem de Fútbol Sub 20",
-        "S. Mas. de Fútbol Sub 20", "S. Mas. de Fútbol Mayores", "S. Mas. de Fútbol Sub 19", "Copa Mundial Femenina", "S. Fem de Fútbol Sub 20", "Selección colombia"
-    ],
-    "Gestión": [
-        "Avances de obras del Metro", "Avanza recuperación de gramilla del Campín", "Lincencia C", "Acolfutpro - Reformas de estatutos",
-        "Pretemporada árbitros del fútbol profesional", "Cancelación registro sindical Acolfutpro", "FCF exalta la gestión de Gianni Infantino al frente de la FIFA",
-        "Circular Expedición Pasaportes Deportivos", "Homenaje arbitro Wilmar Roldán", "La FCF pone en marcha las veedurías nacionales", "Programa de detección de talento FCF",
-        "FCF envía mensaje de apoyo a México", "Estadios de primera división", "FCF, DIMAYOR y RFEF", "Acreditación y pre-inscripción para la prensa",
-        "Regularización entrenadores Futsal y Fútbol Playa", "Seguridad en los estadios", "Curso FIFA RAP Instructores Técnicos de Fútbol 2026",
-        "Derechos exclusivos de transmisión de partidos", "Obligatoriedad de licencia C", "Inauguración del Hotel FCF", "Curso RAP", "Los Panitas",
-        "Licencia A", "Consolidan al Claro Gaming", "Sesión formativa sobre integridad", "Fútbol con Futuro", "Pruebas de habilitación árbitros categoría A y FIFA",
-        "Capacitaciones técnicos y jugadores", "Nuevas reglas para el Mundial 2026", "Licencias para entrenadores", "Licencia B de Entrenador de Arqueros",
-        "Fundación HOMI", "Hotel de la Selección Colombia", "Acuerdo laboral en pro de los derechos de los futbolistas", "FCF Camps 2025", "FCF CAMPS 2026",
-        "Escarapela FIFA", "Seminario para Entrenadores de Arqueros Juveniles de Élite."
-    ],
-    "Jugadores": [
-        "Aldair Gutiérrez", "Antonio Simancas", "Sebastian Villa", "David Ospina", "Rafael Santos Borré", "Luis Díaz", "Maithe López", "Jefferson Lerma",
-        "Samuel Martínez", "Iker Quintero", "Leicy Santos", "Miguel Agámez", "Juan Arizala", "Deiver Machado", "James Rodríguez", "Juan Guillermo Cuadrado",
-        "José Escorcia", "Lauren Chamorro López", "Juan Fernando Quintero", "Cristhian Mosquera", "Dávinson Sánchez", "Juan Camilo ´Cucho´ Hernández",
-        "Jhon Arias", "Jorge Carrascal", "Falcao García", "Gustavo Puerta", "Johan Mojica", "Sebastián Villa", "Richard Ríos", "Wilmar Barrios",
-        "Kevin Castaño", "Daniel Muñoz", "Luis Suárez", "Cristian Borja", "Elkin Arce Mena", "Gorka Abascal", "Jhon Durán", "Jhon Solís", "Jhon Córdoba",
-        "Marlyn Sandrid Trujillo Torres", "Dairon Asprilla", "Yoreli Rincón", "Willer Ditta", "Gabriela Rodríguez", "Radamel Falcao", "Hermen Landázuri",
-        "Lista de bloqueados", "Juan Camilo Portilla", "Jhon Lucumí", "Santiago Castrillón", "Linda Caicedo"
-    ],
-    "Entorno": [
-        "Alvaro González Alzate", "Amaño de partidos Copa BetPlay", "Amaranto Perea", "Angelica Yulieth Sánchez", "Aniversario del Estadio Metropolitano Roberto Meléndez",
-        "Arbitraje Colombiano", "Bobby Moore", "Bogotá aprueba incentivos tributarios", "Bogotá busca brindar incentivos tributarios", "Bogotá FC cumple 23 años",
-        "Cartel del fútbol colombiano", "Credito FCF", "Cubrimiento Gol Caracol", "Cubrimiento RCN", "Deportivo Pasto", "Deportivo Pereira",
-        "Estadio de Sogamoso", "Exdirectivos", "Faustino \"Tino\" Asprilla", "FCF expresa condolencias a Álvaro González Alzate por el fallecimiento de su hermano",
-        "FCF felicita a Atlético Bucaramanga en su aniversario 77", "FCF felicita a Atlético Nacional", "FCF felicita a Bogotá FC", "FCF felicita a Boyacá Chicó",
-        "FCF Felicita a FIFA", "FCF felicita a la AUF", "FCF felicita a la Liga de Fútbol de Córdoba", "FCF felicita a la Liga de Fútbol de Quindío",
-        "FCF felicita a la Liga de Fútbol de Risaralda", "FCF felicita a la Liga de Fútbol del Valle del Cauca", "FCF felicita a Liga de Fútbol de San Andrés, Providencia, Santa Catalina e Islas",
-        "FCF felicita a Liga de Fútbol del Magdalena", "FCF felicita a Llaneros FC", "FCF felicita al Barranquilla FC", "FCF felicita al Unión Magdalena",
-        "FCF felicita en el Día Mundial del Entrenador de Fútbol", "FCF lamenta muerte de 'Pocillo' López", "Fotógrafo FCF", "Gafas oficiales FCF",
-        "Gobierno Petro", "Hernán Mejía Campuzano", "Homenaje a Santiago Castrillón", "Ímer Machado", "Iván Ramiro Córdoba sueña con la FCF", "Jeison Murillo",
-        "Juan Felipe Mejía", "Libro Rastros de una pasión", "Liga Caldense", "Mario Alberto Yepes", "Media FCF", "Miguel Calero", "Noble gesto de Colombia con periodistas",
-        "Nuevas prendas antes del mundial", "Nuevas reglas para acabar con la trampa", "Obras en el Estadio Metropolitano", "Rafael Zabaraín",
-        "Reemplazar al Deportivo Pereira", "Reinaldo Rueda", "Sección IA", "Sede administrativa de la FCF", "Sede de la Federación Colombiana de Fútbol",
-        "Sede partido Inter vs Nacional", "Selección Colombia de Fútbol de Trasplantados", "Shakira y emblemas de la FCF", "Tercera división", "Wilmar Roldán", "Zlatko Dalic"
-    ]
-}
 
 # ======================================
 # Caché Global de Embeddings
@@ -207,7 +119,7 @@ html,body,[data-testid="stApp"]{
 .app-header-icon{width:40px;height:40px;background:linear-gradient(135deg,#059669,#047857);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:white;flex-shrink:0;}
 .app-header-title{font-family:'Google Sans',sans-serif;font-size:1.25rem;font-weight:700;color:var(--text);}
 .app-header-badge{background:var(--accent-bg);border:1px solid var(--accent-bdr);color:#047857;font-family:'Roboto Mono',monospace;font-size:0.65rem;font-weight:500;padding:0.25rem 0.75rem;border-radius:100px;text-transform:uppercase;}
-.metrics-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem;margin:0.8rem 0}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0.6rem;margin:0.8rem 0}
 .metric-card{background:var(--s1);border:1px solid var(--border);border-radius:var(--r2);padding:0.8rem;text-align:center;box-shadow:var(--shadow-sm);}
 .metric-val{font-family:'Google Sans',sans-serif;font-size:1.5rem;font-weight:700;line-height:1;margin-bottom:0.3rem;}
 .metric-lbl{font-family:'Roboto Mono',monospace;font-size:0.62rem;color:var(--text3);text-transform:uppercase;}
@@ -216,7 +128,7 @@ html,body,[data-testid="stApp"]{
 """, unsafe_allow_html=True)
 
 # ======================================
-# Utilidades de Datos
+# Utilidades de Datos y Configuración
 # ======================================
 def check_password():
     if st.session_state.get("password_correct", False):
@@ -243,16 +155,24 @@ def load_local_config():
 def load_config_maps(config_path):
     try:
         config_sheets = pd.read_excel(config_path, sheet_name=None, engine='openpyxl')
+        region_map = {}
+        if 'Regiones' in config_sheets:
+            region_map = pd.Series(
+                config_sheets['Regiones'].iloc[:, 1].values,
+                index=config_sheets['Regiones'].iloc[:, 0].astype(str).str.lower().str.strip()
+            ).dropna().to_dict()
+            
         internet_map = {}
         if 'Internet' in config_sheets:
             internet_map = pd.Series(
                 config_sheets['Internet'].iloc[:, 1].values,
                 index=config_sheets['Internet'].iloc[:, 0].astype(str).str.lower().str.strip()
             ).dropna().to_dict()
-        return internet_map
+            
+        return region_map, internet_map
     except Exception as e:
-        st.warning(f"No se pudo cargar la configuración de mapeos de internet: {e}")
-        return {}
+        st.warning(f"Error al cargar la configuración de mapeos locales: {e}")
+        return {}, {}
 
 def call_with_retries(fn, *a, **kw):
     d = 1
@@ -281,10 +201,6 @@ def normalize_title_for_comparison(title):
         parts = cleaned.split(":", 1)
         if len(parts[1].strip()) >= 10: cleaned = parts[1].strip()
     return re.sub(r"\W+", " ", cleaned).lower().strip()
-
-def clean_text(text):
-    if not isinstance(text, str): return text
-    return text.strip()
 
 def normalizar_tipo_medio_fcf(tipo_raw):
     if not isinstance(tipo_raw, str): return str(tipo_raw)
@@ -371,36 +287,28 @@ def get_embeddings_batch(textos, batch_size=100):
 
 async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) -> dict:
     async with sem:
-        # Se estructuran las opciones válidas para inyectar en la instrucción
-        taxonomia_instruccion = ""
-        for t, subs in TAXONOMIA_FCF.items():
-            taxonomia_instruccion += f"- **{t}**: {', '.join(subs[:8])}...\n"
-
         prompt = (
-            f"Eres un analista de inteligencia de medios experto en fútbol y especializado en la Federación Colombiana de Fútbol (FCF).\n"
-            f"Tu tarea consiste en analizar la siguiente noticia y clasificar su TEMA, SUBTEMA e IMPACTO reputacional de manera altamente lógica.\n\n"
+            f"Eres un analista experto en reputación de medios especializado en la Federación Colombiana de Fútbol (FCF).\n"
+            f"Tu tarea consiste en analizar la noticia suministrada y clasificar su TEMA, SUBTEMA e IMPACTO (Tono) con criterios estrictos y lógicos.\n\n"
             f"--- NOTICIA ---\n"
             f"Título: {titulo}\n"
             f"Resumen: {resumen}\n\n"
-            f"--- REGLAS DE ETIQUETADO ---\n"
-            f"1. **TEMA**: Debe ser EXACTAMENTE una de las siguientes opciones (respeta mayúsculas y acentos):\n"
-            f"   - Institucional\n"
-            f"   - Torneos - Copas - Ligas\n"
-            f"   - Selecciones\n"
-            f"   - Gestión\n"
-            f"   - Jugadores\n"
-            f"   - Entorno\n\n"
-            f"2. **SUBTEMA**: Analiza la noticia y asocia un subtema adecuado. Como referencia, aquí tienes algunos ejemplos por tema:\n"
-            f"{taxonomia_instruccion}"
-            f"   Si la noticia coincide exactamente con uno de estos ejemplos, úsalo. "
-            f"Si trata de un asunto específico no listado, genera un subtema nominal muy preciso de 2 a 4 palabras "
-            f"(sin verbos conjugados, sin nombres de marcas, respetando acentos y eñes).\n\n"
-            f"3. **IMPACTO (Tono)**: Determina el impacto reputacional hacia la FCF:\n"
-            f"   - **Positivo**: Si hay exaltación, logros, o reconocimiento directo de la gestión de la FCF.\n"
-            f"   - **Negativo**: Críticas directas, denuncias, comentarios negativos o señalamientos hacia la FCF o sus dirigentes.\n"
-            f"   - **Neutro**: Información básica sobre partidos de fútbol, listas de convocados, transferencias de jugadores o mención casual sin connotación valorativa.\n\n"
-            f"Responde ESTRICTAMENTE en formato JSON con la siguiente estructura:\n"
-            f'{{"tema": "TEMA_AQUÍ", "subtema": "SUBTEMA_AQUÍ", "impacto": "Positivo|Negativo|Neutro"}}'
+            f"--- REGLAS DE CLASIFICACIÓN ---\n"
+            f"1. **TEMA**: Debe ser estrictamente uno de los siguientes 6 valores (elige el que mejor aplique):\n"
+            f"   - Institucional (asuntos internos, elecciones, patrocinadores, asambleas de la FCF, etc.)\n"
+            f"   - Torneos - Copas - Ligas (campeonatos, boletería, desarrollo de partidos locales/internacionales de clubes, arbitraje general)\n"
+            f"   - Selecciones (noticias y convocatorias de la Selección Colombia en sus distintas divisiones)\n"
+            f"   - Gestión (proyectos, certificaciones, cursos, licenciamiento de estadios o capacitación de técnicos)\n"
+            f"   - Jugadores (noticias enfocadas directamente en el rendimiento, transferencias o vida de futbolistas individuales)\n"
+            f"   - Entorno (relaciones de la FCF con el gobierno, homenajes externos, aniversarios de clubes o incidentes del fútbol)\n\n"
+            f"2. **SUBTEMA**: Crea o asocia un subtema altamente específico para la noticia.\n"
+            f"   Debe ser una frase nominal muy concreta de 2 a 4 palabras, sin verbos conjugados, sin marcas comerciales y con ortografía correcta (ej: 'Convocatoria de Selección', 'Regulación de árbitros', 'Desarrollo de Liga Femenina').\n\n"
+            f"3. **IMPACTO**: Califica el tono reputacional hacia la FCF:\n"
+            f"   - 'Positivo': Si la noticia exalta, felicita o resalta una gestión, logro, o anuncio exitoso directo de la FCF.\n"
+            f"   - 'Negativo': Si contiene críticas directas, cuestionamientos públicos, multas, fallas organizativas graves, quejas o comentarios desfavorables hacia la FCF o sus dirigentes.\n"
+            f"   - 'Neutro': Información básica, relatos de partidos, datos ordinarios, convocatorias o mención informativa regular donde no se exalta ni se critica directamente a la FCF.\n\n"
+            f"Responde estrictamente en formato JSON con el siguiente esquema:\n"
+            f'{{"tema": "...", "subtema": "...", "impacto": "Positivo|Negativo|Neutro"}}'
         )
 
         try:
@@ -408,7 +316,7 @@ async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) 
                 openai.ChatCompletion.acreate,
                 model=OPENAI_MODEL_CLASIFICACION,
                 messages=[{"role": "user", "content": prompt}],
-                max_tokens=120,
+                max_tokens=150,
                 temperature=0.0,
                 response_format={"type": "json_object"}
             )
@@ -422,7 +330,7 @@ async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) 
             subtema = str(res.get("subtema", "")).strip()
             impacto = str(res.get("impacto", "")).strip().title()
 
-            if tema not in TAXONOMIA_FCF.keys():
+            if tema not in ["Institucional", "Torneos - Copas - Ligas", "Selecciones", "Gestión", "Jugadores", "Entorno"]:
                 tema = "Institucional"
             if impacto not in ["Positivo", "Negativo", "Neutro"]:
                 impacto = "Neutro"
@@ -434,30 +342,37 @@ async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) 
 # ======================================
 # Proceso de Agrupamiento y Análisis
 # ======================================
-async def procesar_analisis_fcf(rows, headers, internet_map, pbar):
+async def procesar_analisis_fcf(rows, headers, region_map, internet_map, pbar):
     n = len(rows)
-    pbar.progress(0.05, "Limpiando campos y analizando vocería...")
+    pbar.progress(0.05, "Mapeando regiones y buscando vocería...")
     
-    # 1. Búsquedas Locales y Re-mapeos Obligatorios
+    # 1. Mapeos locales rigurosos
     for row in rows:
         # Búsqueda local de vocero en RESUMEN
-        resumen_val = row.get("RESUMEN", "") or ""
-        row["VOCERO"] = buscar_vocero(str(resumen_val))
-        
-        # Mapeo y reemplazo de Tipo de Medio
-        tm_val = row.get("TIPO DE MEDIO", "") or ""
+        res_val = row.get("RESUMEN") or ""
+        row["VOCERO"] = buscar_vocero(str(res_val))
+
+        # Determinar Región antes de alterar NOMBRE DE MEDIO
+        nm_val = row.get("NOMBRE DE MEDIO") or ""
+        nm_clean = str(nm_val).strip().lower()
+        if nm_clean in region_map:
+            row["REGION"] = region_map[nm_clean]
+        else:
+            if not row.get("REGION"):
+                row["REGION"] = "N/A"
+
+        # Re-mapeo y normalización de Tipo de Medio
+        tm_val = row.get("TIPO DE MEDIO") or ""
         tipo_norm = normalizar_tipo_medio_fcf(str(tm_val))
         row["TIPO DE MEDIO"] = tipo_norm
-        
-        # Buscarv en NOMBRE DE MEDIO si es de Tipo Internet / Online
-        if str(tm_val).strip().lower() in ["online", "internet"]:
-            nm_val = row.get("NOMBRE DE MEDIO", "") or ""
-            nm_clean = str(nm_val).strip().lower()
+
+        # Mapeo de nombres de Internet solo para tipo Online / Internet
+        if str(tm_val).strip().lower() in ["online", "internet"] or tipo_norm == "Internet":
             if nm_clean in internet_map:
                 row["NOMBRE DE MEDIO"] = internet_map[nm_clean]
 
     # 2. Agrupamiento Lógico de Noticias Similares
-    pbar.progress(0.15, "Agrupando por similitud en títulos...")
+    pbar.progress(0.15, "Agrupando noticias similares por títulos...")
     dsu = DSU(n)
     titulos = [str(r.get("TÍTULO") or r.get("TITULO", "")).strip() for r in rows]
     norm_titles = [normalize_title_for_comparison(t) for t in titulos]
@@ -469,7 +384,7 @@ async def procesar_analisis_fcf(rows, headers, internet_map, pbar):
             if SequenceMatcher(None, norm_titles[i], norm_titles[j]).ratio() >= SIMILARITY_THRESHOLD_TITULOS:
                 dsu.union(i, j)
 
-    pbar.progress(0.30, "Generando embeddings para validación semántica...")
+    pbar.progress(0.30, "Analizando semántica del texto...")
     textos = [
         texto_para_embedding(
             str(r.get("TÍTULO") or r.get("TITULO", "")),
@@ -497,7 +412,7 @@ async def procesar_analisis_fcf(rows, headers, internet_map, pbar):
             for j in cl[1:]:
                 dsu.union(cl[0], j)
 
-    # 3. Procesamiento en Paralelo con Semáforo
+    # 3. Procesamiento en Paralelo con Orden Preservado
     grupos = dsu.grupos(n)
     total_grupos = len(grupos)
     pbar.progress(0.50, f"Clasificando {total_grupos} grupos de noticias con {OPENAI_MODEL_CLASIFICACION}...")
@@ -512,15 +427,11 @@ async def procesar_analisis_fcf(rows, headers, internet_map, pbar):
         rep_resumen = str(rows[rep_idx].get("RESUMEN") or "")
         tasks.append(clasificar_fcf_llm(rep_title, rep_resumen, sem))
 
-    resultados = []
-    for idx, f in enumerate(asyncio.as_completed(tasks)):
-        res = await f
-        resultados.append(res)
-        pbar.progress(0.50 + 0.45 * (idx + 1) / total_grupos, f"Clasificados {idx + 1}/{total_grupos} grupos...")
-
+    # Uso de gather para conservar el orden estricto de cids
+    resultados = await asyncio.gather(*tasks)
     rpg = {cids[k]: resultados[k] for k in range(len(cids))}
 
-    # Asignar resultados unificados al grupo completo
+    # Asignación de vuelta a los registros individuales
     for cid, idxs in grupos.items():
         evaluacion = rpg.get(cid, {"tema": "Institucional", "subtema": "Varios", "impacto": "Neutro"})
         for i in idxs:
@@ -528,7 +439,7 @@ async def procesar_analisis_fcf(rows, headers, internet_map, pbar):
             rows[i]["SUBTEMA"] = evaluacion["subtema"]
             rows[i]["Impacto"] = evaluacion["impacto"]
 
-    pbar.progress(1.0, "Clasificación finalizada")
+    pbar.progress(1.0, "Análisis de clasificación finalizado.")
     return rows
 
 # ======================================
@@ -602,16 +513,16 @@ async def run_fcf_pipeline(df_file):
         openai.api_key = st.secrets["OPENAI_API_KEY"]
         openai.aiosession.set(None)
     except:
-        st.error("Error: OPENAI_API_KEY no se encuentra definido.")
+        st.error("Error: la llave OPENAI_API_KEY no se encuentra definida.")
         st.stop()
 
     with st.status("Cargando y procesando archivos de entrada...", expanded=True) as status_step:
         config_path = load_local_config()
         if not config_path:
-            st.error("❌ No se encontró el archivo 'Configuracion.xlsx' en la raíz del repositorio.")
+            st.error("❌ No se encontró el archivo 'Configuracion.xlsx' en el repositorio.")
             st.stop()
             
-        internet_map = load_config_maps(config_path)
+        region_map, internet_map = load_config_maps(config_path)
 
         wb_in = load_workbook(df_file, data_only=True)
         sheet = wb_in.active
@@ -635,18 +546,18 @@ async def run_fcf_pipeline(df_file):
                         row_data[h] = val
             rows.append(row_data)
 
-        status_step.update(label="✓ Dossier y mapeos cargados correctamente.", state="complete")
+        status_step.update(label="✓ Archivos cargados correctamente.", state="complete")
 
     # Validar columnas de entrada críticas
     norm_headers = [h.strip().lower() for h in headers]
     for r_col in ["título", "resumen"]:
         if not any(r_col in nh for nh in norm_headers):
-            st.error(f"Falta columna indispensable en el archivo de entrada: {r_col.upper()}")
+            st.error(f"Columna requerida ausente en el archivo de entrada: {r_col.upper()}")
             st.stop()
 
     with st.status("Analizando contenido con Inteligencia Artificial...", expanded=True) as status_step:
         pbar = st.progress(0.0)
-        rows_processed = await procesar_analisis_fcf(rows, headers, internet_map, pbar)
+        rows_processed = await procesar_analisis_fcf(rows, headers, region_map, internet_map, pbar)
         status_step.update(label="✓ Clasificación de noticias completada.", state="complete")
 
     ci = (st.session_state['tokens_input']     / 1e6) * PRICE_INPUT_1M
@@ -694,7 +605,7 @@ def main():
     else:
         st.markdown(
             '<div style="background-color:var(--accent-bg); border:1px solid var(--accent-bdr); border-radius:12px; padding:1rem; margin-bottom:1rem;">'
-            '<h4 style="color:#047857; margin:0;">✓ ¡Procesamiento completado con éxito!</h4>'
+            '<h4 style="color:#047857; margin:0;">✓ Procesamiento completado</h4>'
             '<p style="margin:0.2rem 0 0 0; font-size:0.85rem;">Las noticias han sido evaluadas y agrupadas lógicamente.</p>'
             '</div>',
             unsafe_allow_html=True
@@ -707,7 +618,6 @@ def main():
           <div class="metric-card"><div class="metric-val" style="color:#059669;">6</div><div class="metric-lbl">Temas Posibles</div></div>
           <div class="metric-card"><div class="metric-val" style="color:#1a73e8;">{st.session_state.process_duration}</div><div class="metric-lbl">Tiempo de Cómputo</div></div>
           <div class="metric-card"><div class="metric-val" style="color:#d97706;">{st.session_state.process_cost}</div><div class="metric-lbl">Costo Consumo</div></div>
-          <div class="metric-card"><div class="metric-val" style="color:#5f6368;">Cache</div><div class="metric-lbl">Estadísticas</div></div>
         </div>""", unsafe_allow_html=True)
         
         st.caption(f"📊 Detalle del cache: {st.session_state.cache_stats}")
