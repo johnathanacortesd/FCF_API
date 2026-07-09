@@ -111,6 +111,57 @@ async def async_chat_completion(model: str, messages: list, max_tokens: int, tem
         return content, prompt_tokens, completion_tokens
 
 # ======================================
+# Caché Global de Embeddings
+# ======================================
+class EmbeddingCache:
+    def __init__(self):
+        self._cache: Dict[str, List[float]] = {}
+        self._hits = 0
+        self._misses = 0
+
+    def _key(self, text):
+        return hashlib.md5(text[:2000].encode('utf-8', errors='ignore')).hexdigest()
+
+    def get(self, text):
+        k = self._key(text)
+        if k in self._cache:
+            self._hits += 1
+            return self._cache[k]
+        self._misses += 1
+        return None
+
+    def put(self, text, emb):
+        self._cache[self._key(text)] = emb
+
+    def get_many(self, textos):
+        results = [None] * len(textos)
+        missing = []
+        for i, t in enumerate(textos):
+            c = self.get(t)
+            if c is not None:
+                results[i] = c
+            else:
+                missing.append(i)
+        return results, missing
+
+    def stats(self):
+        total = self._hits + self._misses
+        rate = (self._hits / total * 100) if total > 0 else 0
+        return f"Cache: {self._hits} hits, {self._misses} misses ({rate:.0f}%)"
+
+    def clear(self):
+        self._cache.clear()
+        self._hits = 0
+        self._misses = 0
+
+# Inicialización y Helper para el estado del Cache
+if '_emb_cache' not in st.session_state:
+    st.session_state['_emb_cache'] = EmbeddingCache()
+
+def get_embedding_cache():
+    return st.session_state['_emb_cache']
+
+# ======================================
 # CSS Estilizado
 # ======================================
 def load_custom_css():
@@ -551,7 +602,7 @@ async def run_fcf_pipeline(df_file):
     with st.status("Cargando y procesando archivos de entrada...", expanded=True) as status_step:
         config_path = load_local_config()
         if not config_path:
-            st.error("❌ No se encontró el archivo 'Configuracion.xlsx' en la raíz del repositorio.")
+            st.error("❌ No se encontró el archivo 'Configuracion.xlsx' en el repositorio.")
             st.stop()
             
         region_map, internet_map = load_config_maps(config_path)
