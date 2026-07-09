@@ -353,7 +353,10 @@ def is_fcf_photo_summary(summary):
     text = normalize_text(summary)
     if not text:
         return False
-    return bool(re.search(r"\bfoto\s*(de\s*)?fcf\b", text))
+    return bool(
+        re.search(r"\bfoto\s*(de\s*)?fcf\b", text)
+        or re.search(r"\btomado\s+de\s+fcf\b", text)
+    )
 
 
 def summary_mentions_fcf_or_spokesperson(summary):
@@ -364,7 +367,6 @@ def summary_mentions_fcf_or_spokesperson(summary):
         r"\bfcf\b",
         r"\bfederacion colombiana de futbol\b",
         r"\bfederacion colombiana\b",
-        r"\bfederacion colombia\b",
         r"\bramon jesurun\b",
         r"\bjesurun\b",
     ]
