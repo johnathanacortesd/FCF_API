@@ -477,6 +477,34 @@ class DSU:
 # ======================================
 # Llamadas de Embeddings y Clasificación
 # ======================================
+def get_embeddings_batch(textos, batch_size=100):
+    """Encapsulación robusta para la obtención y almacenamiento en caché de vectores semánticos."""
+    if not textos: return []
+    cache = get_embedding_cache()
+    resultados, missing = cache.get_many(textos)
+    if not missing: return resultados
+    mt = [textos[i][:2000] if textos[i] else "" for i in missing]
+    for i in range(0, len(mt), batch_size):
+        batch = mt[i:i + batch_size]
+        bidx = missing[i:i + batch_size]
+        try:
+            embs, total_tokens = call_with_retries(sync_embedding_create, batch, OPENAI_MODEL_EMBEDDING)
+            st.session_state['tokens_embedding'] += total_tokens
+            for j, emb in enumerate(embs):
+                oi = bidx[j]
+                resultados[oi] = emb
+                cache.put(textos[oi], emb)
+        except Exception as e:
+            st.error(f"⚠️ Error al generar embeddings: {str(e)}")
+            for j, t in enumerate(batch):
+                oi = bidx[j]
+                try:
+                    embs_single, total_tokens_single = sync_embedding_create([t], OPENAI_MODEL_EMBEDDING)
+                    resultados[oi] = embs_single[0]
+                    cache.put(textos[oi], embs_single[0])
+                except: pass
+    return resultados
+
 async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) -> dict:
     async with sem:
         prompt = (
@@ -492,7 +520,7 @@ async def clasificar_fcf_llm(titulo: str, resumen: str, sem: asyncio.Semaphore) 
             f"   - Selecciones (noticias, partidos, entrenamientos o convocatorias de la Selección Colombia masculina o femenina de cualquier categoría)\n"
             f"   - Gestión (capacitaciones de FCF, licencias de técnicos, de estadios, programas de talento o desarrollo de la federación)\n"
             f"   - Jugadores (noticias enfocadas en el rendimiento, transferencias o actualidad de futbolistas individuales: Luis Díaz, James, etc.)\n"
-            f"   - Entorno (noticias de clubes o ligas, aniversarios, relaciones de la FCF con el gobierno, e incidentes del fútbol nacional)\n\n"
+            f"   - Entorno (noticias de clubes o ligas, aniversarios, relaciones institucionales de la FCF con el gobierno, e incidentes del fútbol nacional)\n\n"
             f"2. **SUBTEMA**:\n"
             f"   - Crea o asocia un subtema específico para la noticia.\n"
             f"   - Debe ser una frase nominal concreta de 2 a 4 palabras, sin verbos conjugados, sin marcas comerciales y con ortografía correcta.\n"
