@@ -359,8 +359,8 @@ def is_fcf_photo_summary(summary):
     )
 
 
-def summary_mentions_fcf_or_spokesperson(summary):
-    text = normalize_text(summary)
+def text_mentions_fcf_or_spokesperson(*values):
+    text = normalize_text(" ".join("" if pd.isna(value) else str(value) for value in values))
     if not text:
         return False
     patterns = [
@@ -640,7 +640,10 @@ def process_dataframe(df, title_col, summary_col, medio_col, web_col, hyperlinks
 
     logo_rows = {
         idx for idx in result.index
-        if idx not in duplicate_rows and not summary_mentions_fcf_or_spokesperson(result.at[idx, summary_col])
+        if (
+            idx not in duplicate_rows
+            and not text_mentions_fcf_or_spokesperson(result.at[idx, title_col], result.at[idx, summary_col])
+        )
     }
     for row_idx in logo_rows:
         result.at[row_idx, OUTPUT_TONO_COL] = "Neutro"
