@@ -59,6 +59,54 @@ SIMILARIDAD_DUPLICADO_TITULO = 0.97
 SIMILARIDAD_EMBEDDING = 0.90
 BATCH_EMBEDDINGS = 80
 
+SELECCIONES = [
+    "Argentina", "Bolivia", "Brasil", "Chile", "Costa Rica", "Ecuador",
+    "Estados Unidos", "Guatemala", "Honduras", "Mexico", "México", "Panama",
+    "Panamá", "Paraguay", "Peru", "Perú", "Uruguay", "Venezuela", "España",
+    "Inglaterra", "Francia", "Alemania", "Italia", "Portugal", "Marruecos",
+    "Japon", "Japón", "Corea", "Senegal", "Nigeria", "Camerun", "Camerún",
+    "Australia", "Nueva Zelanda", "Canada", "Canadá", "Qatar",
+]
+
+SELECCION_ALIASES = {
+    "Argentina": ["argentina", "albiceleste"],
+    "Bolivia": ["bolivia"],
+    "Brasil": ["brasil", "brazil", "canarinha"],
+    "Chile": ["chile"],
+    "Costa Rica": ["costa rica", "ticos", "tica"],
+    "Ecuador": ["ecuador", "tri"],
+    "Estados Unidos": ["estados unidos", "eeuu", "ee uu", "usa", "usmnt"],
+    "Guatemala": ["guatemala"],
+    "Honduras": ["honduras"],
+    "Mexico": ["mexico", "seleccion mexicana", "tri mexicano"],
+    "Panama": ["panama", "canaleros"],
+    "Paraguay": ["paraguay", "albirroja"],
+    "Peru": ["peru", "blanquirroja"],
+    "Uruguay": ["uruguay", "charrua", "celeste"],
+    "Venezuela": ["venezuela", "vinotinto"],
+    "España": ["espana", "españa"],
+    "Inglaterra": ["inglaterra", "england"],
+    "Francia": ["francia", "france"],
+    "Alemania": ["alemania", "germany"],
+    "Italia": ["italia", "italy"],
+    "Portugal": ["portugal"],
+    "Marruecos": ["marruecos", "morocco"],
+    "Japon": ["japon", "japón", "japan"],
+    "Corea": ["corea", "corea del sur", "south korea"],
+    "Senegal": ["senegal"],
+    "Nigeria": ["nigeria"],
+    "Camerun": ["camerun", "camerún", "cameroon"],
+    "Australia": ["australia"],
+    "Nueva Zelanda": ["nueva zelanda", "new zealand"],
+    "Canada": ["canada", "canadá"],
+    "Qatar": ["qatar", "catar"],
+}
+
+COLOMBIA_ALIASES = [
+    "colombia", "seleccion colombia", "seleccion colombiana",
+    "seleccion de colombia", "tricolor", "la tricolor",
+]
+
 
 class DSU:
     def __init__(self, n):
@@ -103,6 +151,45 @@ def get_column(df, candidates):
         if key in by_norm:
             return by_norm[key]
     return None
+
+
+def load_custom_css():
+    st.markdown(
+        """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+:root{
+  --fcf-blue:#173b7a;
+  --fcf-gold:#d9a441;
+  --fcf-red:#c8202f;
+  --surface:#ffffff;
+  --muted:#667085;
+  --border:#d9e2ef;
+  --soft:#f5f8fc;
+}
+.stApp{background:linear-gradient(180deg,#f7faff 0%,#ffffff 36%);font-family:'Inter',sans-serif;}
+.block-container{padding-top:1.3rem;max-width:1220px;}
+.fcf-hero{border:1px solid var(--border);border-radius:8px;background:var(--surface);padding:1rem 1.1rem;margin-bottom:.9rem;box-shadow:0 8px 24px rgba(23,59,122,.08);}
+.fcf-kicker{font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--fcf-blue);margin-bottom:.25rem;}
+.fcf-title{font-size:1.8rem;line-height:1.1;font-weight:800;color:#12233f;margin:0;}
+.fcf-sub{color:var(--muted);font-size:.9rem;margin-top:.35rem;}
+.sec-label{font-size:.72rem;font-weight:800;color:var(--fcf-blue);letter-spacing:.08em;text-transform:uppercase;margin:.8rem 0 .4rem;}
+.upload-zone{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin:.4rem 0 .8rem;}
+.upload-zone-card{background:#fff;border:1.5px dashed var(--border);border-radius:8px;padding:.75rem .85rem;}
+.upload-zone-title{font-size:.88rem;font-weight:800;color:#12233f;}
+.upload-zone-desc{font-size:.75rem;color:var(--muted);margin-top:.2rem;}
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin:.75rem 0;}
+.metric-card{background:#fff;border:1px solid var(--border);border-radius:8px;padding:.8rem .9rem;box-shadow:0 6px 18px rgba(23,59,122,.06);}
+.metric-val{font-size:1.45rem;font-weight:800;line-height:1;color:#12233f;}
+.metric-lbl{font-size:.68rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-top:.28rem;}
+.success-banner{background:#effaf4;border:1px solid #bbebcd;border-left:4px solid #16a34a;border-radius:8px;padding:.8rem 1rem;margin:.5rem 0 .8rem;color:#14532d;font-weight:700;}
+div.stButton > button:first-child{background:var(--fcf-blue);border-color:var(--fcf-blue);border-radius:8px;font-weight:800;}
+div.stDownloadButton > button:first-child{background:var(--fcf-red);border-color:var(--fcf-red);border-radius:8px;font-weight:800;color:white;}
+@media(max-width:800px){.upload-zone,.metrics-grid{grid-template-columns:1fr}.fcf-title{font-size:1.35rem}}
+</style>
+""",
+        unsafe_allow_html=True,
+    )
 
 
 def extract_embedded_links(xlsx_bytes, columns=("LINK", "WEB")):
@@ -167,8 +254,12 @@ def load_local_config():
     return None
 
 
-def load_region_lookup(config_path):
-    sheets = pd.read_excel(config_path, sheet_name=None, engine="openpyxl")
+def load_config_sheets(config_source):
+    return pd.read_excel(config_source, sheet_name=None, engine="openpyxl")
+
+
+def load_region_lookup(config_source):
+    sheets = load_config_sheets(config_source)
     for sheet_name, sheet_df in sheets.items():
         if sheet_df.empty:
             continue
@@ -196,20 +287,23 @@ def load_region_lookup(config_path):
     return {}, None
 
 
-def apply_region_lookup(df, medio_col, region_col):
-    config_path = load_local_config()
+def apply_region_lookup(df, medio_col, region_col, config_source=None, config_label=None):
+    config_path = config_source or load_local_config()
     if not config_path:
         return df, "No se encontro Configuracion.xlsx; se conserva REGION del archivo cargado."
 
     lookup, sheet_name = load_region_lookup(config_path)
     if not lookup:
-        return df, f"No se encontraron columnas NOMBRE DE MEDIO y REGION en {config_path.name}."
+        label = config_label or getattr(config_path, "name", "Configuracion.xlsx")
+        return df, f"No se encontraron columnas NOMBRE DE MEDIO y REGION en {label}."
 
     result = df.copy()
     mapped = result[medio_col].apply(lambda value: lookup.get(normalize_text(value)))
     result[region_col] = mapped.fillna(result[region_col])
     found = int(mapped.notna().sum())
-    return result, f"Buscarv aplicado desde {config_path.name} ({sheet_name}): {found}/{len(result)} regiones actualizadas."
+    label = config_label or getattr(config_path, "name", "Configuracion.xlsx")
+    missing = len(result) - found
+    return result, f"Buscarv NOMBRE DE MEDIO -> REGION aplicado desde {label} ({sheet_name}): {found}/{len(result)} medios encontrados; {missing} sin coincidencia."
 
 
 def build_analysis_text(title, summary):
@@ -260,6 +354,123 @@ def is_fcf_photo_summary(summary):
     if not text:
         return False
     return bool(re.search(r"\bfoto\s*(de\s*)?fcf\b", text))
+
+
+def title_case_label(text):
+    clean = " ".join(str(text).strip().split())
+    if not clean:
+        return clean
+    small = {"de", "del", "la", "el", "los", "las", "ante", "y"}
+    words = []
+    for pos, word in enumerate(clean.split()):
+        low = word.lower()
+        if pos > 0 and low in small:
+            words.append(low)
+        else:
+            words.append(word[:1].upper() + word[1:].lower())
+    return " ".join(words)
+
+
+def has_any_phrase(norm, phrases):
+    return any(re.search(rf"\b{re.escape(normalize_text(phrase))}\b", norm) for phrase in phrases)
+
+
+def is_partido_context(norm):
+    match_words = r"\b(partido|encuentro|juego|duelo|fecha|fixture|calendario|debut|enfrenta|enfrentara|enfrentará|enfrento|enfrentó|vs|contra|ante)\b"
+    tournament_words = r"\b(mundial|copa del mundo|mundial 2026|eliminatoria|eliminatorias|clasificatorio|clasificatorias|seleccion|selecciones)\b"
+    colombia_context = has_any_phrase(norm, COLOMBIA_ALIASES)
+    return bool(re.search(match_words, norm)) and (bool(re.search(tournament_words, norm)) or colombia_context)
+
+
+def label_for_selection_alias(alias_norm):
+    for label, aliases in SELECCION_ALIASES.items():
+        if alias_norm in {normalize_text(alias) for alias in aliases}:
+            return title_case_label(label)
+    return title_case_label(alias_norm)
+
+
+def find_rival_selection(norm):
+    colombia_pattern = r"(?:colombia|seleccion colombia|seleccion colombiana|seleccion de colombia|tricolor|la tricolor)"
+    action_pattern = r"(?:enfrenta|enfrentara|enfrento|jugara|jugo|juega|mide|medira|choca|chocara|disputa|disputara)"
+
+    for label, aliases in SELECCION_ALIASES.items():
+        for alias in aliases:
+            alias_norm = normalize_text(alias)
+            rival_pattern = re.escape(alias_norm)
+            patterns = [
+                rf"\b(?:ante|contra)\s+(?:la\s+seleccion\s+de\s+|seleccion\s+de\s+|seleccion\s+)?{rival_pattern}\b",
+                rf"\bfrente\s+a\s+(?:la\s+seleccion\s+de\s+|seleccion\s+de\s+|seleccion\s+)?{rival_pattern}\b",
+                rf"\bvs\.?\s+{rival_pattern}\b",
+                rf"\b{rival_pattern}\s+vs\.?\s+{colombia_pattern}\b",
+                rf"\b{colombia_pattern}\s+vs\.?\s+{rival_pattern}\b",
+                rf"\b{colombia_pattern}\s+[-–]\s+{rival_pattern}\b",
+                rf"\b{rival_pattern}\s+[-–]\s+{colombia_pattern}\b",
+                rf"\b{colombia_pattern}\s+(?:se\s+)?{action_pattern}\s+(?:ante\s+|contra\s+|frente\s+a\s+|con\s+|a\s+)?{rival_pattern}\b",
+                rf"\b{rival_pattern}\s+(?:se\s+)?{action_pattern}\s+(?:ante\s+|contra\s+|frente\s+a\s+|con\s+|a\s+)?{colombia_pattern}\b",
+            ]
+            if any(re.search(pattern, norm) for pattern in patterns):
+                return title_case_label(label)
+
+    return None
+
+
+def detect_partido_subtema(text):
+    norm = normalize_text(text)
+    if not is_partido_context(norm):
+        return None
+
+    rival = find_rival_selection(norm)
+    if rival:
+        return f"Partido ante {rival}"
+
+    if re.search(r"\b(copa del mundo|copa mundial|copa mundo|mundial 2026|mundial)\b", norm):
+        return "Partido Mundial 2026"
+    if re.search(r"\b(eliminatoria|eliminatorias|clasificatorio|clasificatorias)\b", norm):
+        return "Partido Eliminatorias"
+    return None
+
+
+def normalize_subtema_fcf(text, tema, subtema):
+    partido = detect_partido_subtema(text)
+    if partido:
+        return "Selecciones", partido
+    generic = normalize_text(subtema)
+    if generic in {
+        "partido mundial", "partido copa del mundo", "partido mundial 2026",
+        "partido de mundial", "partido del mundial", "juego mundial",
+        "encuentro mundial", "partido copa mundo", "partido copa mundial",
+        "partido de copa del mundo", "partido del copa del mundo",
+    }:
+        return "Selecciones", "Partido Mundial 2026"
+    if generic in {"partido eliminatorias", "partido eliminatoria", "juego eliminatorias"}:
+        return "Selecciones", "Partido Eliminatorias"
+    return tema, subtema
+
+
+def apply_partido_normalization_to_result(result, row_idx, text):
+    current_tema = result.at[row_idx, OUTPUT_TEMA_COL]
+    current_subtema = result.at[row_idx, OUTPUT_SUBTEMA_COL]
+    tema, subtema = normalize_subtema_fcf(text, current_tema, current_subtema)
+    result.at[row_idx, OUTPUT_TEMA_COL] = tema
+    result.at[row_idx, OUTPUT_SUBTEMA_COL] = subtema
+
+
+def choose_group_partido_subtema(row_texts):
+    detected = [detect_partido_subtema(text) for text in row_texts]
+    detected = [item for item in detected if item]
+    if not detected:
+        return None
+
+    rival_labels = sorted({item for item in detected if item.startswith("Partido ante ")})
+    if len(rival_labels) == 1:
+        return rival_labels[0]
+    if len(rival_labels) > 1:
+        return None
+    if any(item == "Partido Mundial 2026" for item in detected):
+        return "Partido Mundial 2026"
+    if any(item == "Partido Eliminatorias" for item in detected):
+        return "Partido Eliminatorias"
+    return None
 
 
 def detect_vocero(summary):
@@ -362,6 +573,9 @@ TEMA:
 SUBTEMA:
 - Debe ser una etiqueta breve y especifica basada en el hecho central.
 - No generalices. Noticias iguales o muy similares deben poder compartir el mismo subtema.
+- Si la noticia es sobre un partido de Colombia en Mundial, Copa del Mundo o Mundial 2026, evita separar artificialmente "Partido Mundial", "Partido Copa del Mundo" y "Partido Mundial 2026".
+- Cuando el rival aparezca en el texto, usa el formato "Partido ante [seleccion]" para agrupar con precision. Ejemplos: "Partido ante Argentina", "Partido ante Brasil".
+- Si no aparece rival claro, usa "Partido Mundial 2026" para Mundial, Copa del Mundo, Copa Mundo o Mundial 2026.
 - Usa nombres concretos cuando ayuden: "Designacion arbitral", "Convocatoria Seleccion Colombia", "Foto", "Comunicado FCF", etc.
 
 TEXTO:
@@ -390,6 +604,7 @@ Responde unicamente JSON valido:
         tema = "Entorno"
     if not subtema:
         subtema = "Sin subtema"
+    tema, subtema = normalize_subtema_fcf(text, tema, subtema)
 
     return {OUTPUT_TONO_COL: tono, OUTPUT_TEMA_COL: tema, OUTPUT_SUBTEMA_COL: subtema[:80]}
 
@@ -432,6 +647,7 @@ def process_dataframe(df, title_col, summary_col, medio_col, web_col, hyperlinks
         normal_rows = [i for i in group if i not in photo_rows]
         if normal_rows:
             rep = representative_index(normal_rows, texts)
+            group_partido_subtema = choose_group_partido_subtema([texts[i] for i in normal_rows])
             try:
                 classification = classify_group(texts[rep])
             except Exception as exc:
@@ -446,6 +662,11 @@ def process_dataframe(df, title_col, summary_col, medio_col, web_col, hyperlinks
                 result.at[original_idx, OUTPUT_TONO_COL] = classification[OUTPUT_TONO_COL]
                 result.at[original_idx, OUTPUT_TEMA_COL] = classification[OUTPUT_TEMA_COL]
                 result.at[original_idx, OUTPUT_SUBTEMA_COL] = classification[OUTPUT_SUBTEMA_COL]
+                if group_partido_subtema:
+                    result.at[original_idx, OUTPUT_TEMA_COL] = "Selecciones"
+                    result.at[original_idx, OUTPUT_SUBTEMA_COL] = group_partido_subtema
+                else:
+                    apply_partido_normalization_to_result(result, original_idx, texts[row_idx])
 
         for row_idx in photo_rows:
             original_idx = active_indices[row_idx]
@@ -489,8 +710,17 @@ def dataframe_to_excel(df, hyperlinks=None):
 
 
 def main():
-    st.title("Analisis FCF")
-    st.caption("Clasificacion de Impacto, TEMA, SUBTEMA y VOCERO para noticias sobre la Federacion Colombiana de Futbol.")
+    load_custom_css()
+    st.markdown(
+        """
+        <div class="fcf-hero">
+          <div class="fcf-kicker">Federacion Colombiana de Futbol</div>
+          <h1 class="fcf-title">Analisis FCF</h1>
+          <div class="fcf-sub">Clasificacion de Impacto, TEMA, SUBTEMA y VOCERO para noticias sobre la FCF.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     with st.sidebar:
         st.subheader("Modelo")
@@ -499,7 +729,25 @@ def main():
         for tema in TEMAS_FCF:
             st.write(f"- {tema}")
 
-    uploaded = st.file_uploader("Sube un archivo XLSX", type=["xlsx"])
+    st.markdown('<div class="sec-label">Archivos de entrada</div>', unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="upload-zone">
+          <div class="upload-zone-card">
+            <div class="upload-zone-title">Dossier FCF</div>
+            <div class="upload-zone-desc">XLSX con NOMBRE DE MEDIO, REGION, TÍTULO, RESUMEN, LINK y WEB.</div>
+          </div>
+          <div class="upload-zone-card">
+            <div class="upload-zone-title">Configuracion</div>
+            <div class="upload-zone-desc">Opcional. Se usa para buscarv con NOMBRE DE MEDIO y actualizar REGION.</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    file_cols = st.columns(2)
+    uploaded = file_cols[0].file_uploader("Dossier FCF", type=["xlsx"], label_visibility="collapsed")
+    uploaded_config = file_cols[1].file_uploader("Configuracion.xlsx", type=["xlsx"], label_visibility="collapsed")
     if not uploaded:
         st.info("El archivo debe incluir el formato FCF con NOMBRE DE MEDIO, REGION, TÍTULO y RESUMEN.")
         return
@@ -530,12 +778,22 @@ def main():
     if missing_expected:
         st.warning("Columnas del formato FCF no detectadas: " + ", ".join(missing_expected))
 
-    df, lookup_message = apply_region_lookup(df, medio_col, region_col)
+    config_source = io.BytesIO(uploaded_config.getvalue()) if uploaded_config else None
+    config_label = uploaded_config.name if uploaded_config else None
+    df, lookup_message = apply_region_lookup(df, medio_col, region_col, config_source, config_label)
     st.info(lookup_message)
-    st.success(
-        f"Archivo cargado: {len(df)} filas. Medio: {medio_col}. Region: {region_col}. "
-        f"Titulo: {title_col}. Resumen: {summary_col}."
+    st.markdown(
+        f"""
+        <div class="metrics-grid">
+          <div class="metric-card"><div class="metric-val">{len(df)}</div><div class="metric-lbl">Filas</div></div>
+          <div class="metric-card"><div class="metric-val">{df[medio_col].nunique(dropna=True)}</div><div class="metric-lbl">Medios</div></div>
+          <div class="metric-card"><div class="metric-val">{df[region_col].nunique(dropna=True)}</div><div class="metric-lbl">Regiones</div></div>
+          <div class="metric-card"><div class="metric-val">{len(hyperlinks)}</div><div class="metric-lbl">Filas con links</div></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
+    st.success(f"Archivo cargado. Texto a analizar: {title_col} + {summary_col}.")
     st.dataframe(df.head(10), use_container_width=True)
 
     if st.button("Analizar FCF", type="primary", use_container_width=True):
@@ -566,9 +824,18 @@ def main():
 
     if "fcf_output" in st.session_state:
         output = st.session_state["fcf_output"]
-        st.subheader("Resultado")
-        st.caption(f"Tiempo de procesamiento: {st.session_state.get('fcf_elapsed', 0):.0f}s")
-        st.caption(f"Duplicadas marcadas: {st.session_state.get('fcf_duplicates', 0)}")
+        st.markdown('<div class="success-banner">Analisis completado. Listo para descargar.</div>', unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="metrics-grid">
+              <div class="metric-card"><div class="metric-val">{len(output)}</div><div class="metric-lbl">Total</div></div>
+              <div class="metric-card"><div class="metric-val">{len(output) - st.session_state.get('fcf_duplicates', 0)}</div><div class="metric-lbl">Unicas</div></div>
+              <div class="metric-card"><div class="metric-val">{st.session_state.get('fcf_duplicates', 0)}</div><div class="metric-lbl">Duplicadas</div></div>
+              <div class="metric-card"><div class="metric-val">{st.session_state.get('fcf_elapsed', 0):.0f}s</div><div class="metric-lbl">Tiempo</div></div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.dataframe(output.head(50), use_container_width=True)
         st.download_button(
             "Descargar XLSX clasificado",
