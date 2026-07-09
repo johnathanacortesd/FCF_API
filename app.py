@@ -738,16 +738,14 @@ def main():
             <div class="upload-zone-desc">XLSX con NOMBRE DE MEDIO, REGION, TÍTULO, RESUMEN, LINK y WEB.</div>
           </div>
           <div class="upload-zone-card">
-            <div class="upload-zone-title">Configuracion</div>
-            <div class="upload-zone-desc">Opcional. Se usa para buscarv con NOMBRE DE MEDIO y actualizar REGION.</div>
+            <div class="upload-zone-title">Configuracion local</div>
+            <div class="upload-zone-desc">Se toma automaticamente de Configuracion.xlsx dentro del repo.</div>
           </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    file_cols = st.columns(2)
-    uploaded = file_cols[0].file_uploader("Dossier FCF", type=["xlsx"], label_visibility="collapsed")
-    uploaded_config = file_cols[1].file_uploader("Configuracion.xlsx", type=["xlsx"], label_visibility="collapsed")
+    uploaded = st.file_uploader("Dossier FCF", type=["xlsx"], label_visibility="collapsed")
     if not uploaded:
         st.info("El archivo debe incluir el formato FCF con NOMBRE DE MEDIO, REGION, TÍTULO y RESUMEN.")
         return
@@ -778,9 +776,7 @@ def main():
     if missing_expected:
         st.warning("Columnas del formato FCF no detectadas: " + ", ".join(missing_expected))
 
-    config_source = io.BytesIO(uploaded_config.getvalue()) if uploaded_config else None
-    config_label = uploaded_config.name if uploaded_config else None
-    df, lookup_message = apply_region_lookup(df, medio_col, region_col, config_source, config_label)
+    df, lookup_message = apply_region_lookup(df, medio_col, region_col)
     st.info(lookup_message)
     st.markdown(
         f"""
