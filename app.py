@@ -10,6 +10,7 @@ import numpy as np
 import openai
 import pandas as pd
 import streamlit as st
+from openpyxl import load_workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 from sklearn.metrics.pairwise import cosine_similarity
 from unidecode import unidecode
@@ -54,6 +55,7 @@ OUTPUT_SUBTEMA_COL = "SUBTEMA"
 OUTPUT_VOCERO_COL = "VOCERO"
 
 SIMILARIDAD_TITULO = 0.93
+SIMILARIDAD_DUPLICADO_TITULO = 0.97
 SIMILARIDAD_EMBEDDING = 0.90
 BATCH_EMBEDDINGS = 80
 
@@ -101,6 +103,51 @@ def get_column(df, candidates):
         if key in by_norm:
             return by_norm[key]
     return None
+
+
+def extract_embedded_links(xlsx_bytes, columns=("LINK", "WEB")):
+    workbook = load_workbook(io.BytesIO(xlsx_bytes), data_only=False)
+    worksheet = workbook.active
+    headers = [cell.value for cell in worksheet[1]]
+    header_positions = {normalize_text(value): idx + 1 for idx, value in enumerate(headers)}
+    links = {}
+
+    for column_name in columns:
+        column_position = header_positions.get(normalize_text(column_name))
+        if not column_position:
+            continue
+
+        for excel_row in range(2, worksheet.max_row + 1):
+            cell = worksheet.cell(row=excel_row, column=column_position)
+            target = None
+            if cell.hyperlink:
+                target = cell.hyperlink.target or cell.hyperlink.location
+            elif isinstance(cell.value, str) and cell.value.strip().lower().startswith(("http://", "https://")):
+                target = cell.value.strip()
+
+            if target:
+                row_index = excel_row - 2
+                links.setdefault(row_index, {})[column_name] = target
+
+    return links
+
+
+def normalize_url(value):
+    if value is None or pd.isna(value):
+        return ""
+    text = str(value).strip()
+    if not text:
+        return ""
+    return text.rstrip("/").lower()
+
+
+def get_row_link(row_index, col_name, df, hyperlinks):
+    if hyperlinks and row_index in hyperlinks and col_name in hyperlinks[row_index]:
+        return hyperlinks[row_index][col_name]
+    actual_col = get_column(df, [col_name])
+    if actual_col:
+        return df.at[row_index, actual_col]
+    return ""
 
 
 def load_local_config():
@@ -169,6 +216,43 @@ def build_analysis_text(title, summary):
     title = "" if pd.isna(title) else str(title).strip()
     summary = "" if pd.isna(summary) else str(summary).strip()
     return f"TITULO: {title}\nRESUMEN: {summary}".strip()
+
+
+def detect_duplicate_rows(df, medio_col, title_col, web_col=None, hyperlinks=None):
+    duplicates = set()
+
+    by_media = defaultdict(list)
+    for idx, row in df.iterrows():
+        media_key = normalize_text(row.get(medio_col, ""))
+        title_key = normalize_text(row.get(title_col, ""))
+        if media_key and title_key:
+            by_media[media_key].append((idx, title_key))
+
+    for rows in by_media.values():
+        for pos, (idx, title_key) in enumerate(rows):
+            if idx in duplicates:
+                continue
+            for other_idx, other_title in rows[pos + 1:]:
+                if other_idx in duplicates:
+                    continue
+                if title_key == other_title:
+                    duplicates.add(other_idx)
+                    continue
+                if SequenceMatcher(None, title_key, other_title).ratio() >= SIMILARIDAD_DUPLICADO_TITULO:
+                    duplicates.add(other_idx)
+
+    if web_col or hyperlinks:
+        seen_web = {}
+        for idx in df.index:
+            web_link = normalize_url(get_row_link(idx, "WEB", df, hyperlinks))
+            if not web_link:
+                continue
+            if web_link in seen_web:
+                duplicates.add(idx)
+            else:
+                seen_web[web_link] = idx
+
+    return duplicates
 
 
 def is_fcf_photo_summary(summary):
@@ -310,14 +394,28 @@ Responde unicamente JSON valido:
     return {OUTPUT_TONO_COL: tono, OUTPUT_TEMA_COL: tema, OUTPUT_SUBTEMA_COL: subtema[:80]}
 
 
-def process_dataframe(df, title_col, summary_col, progress):
+def process_dataframe(df, title_col, summary_col, medio_col, web_col, hyperlinks, progress):
     result = df.copy()
     result[OUTPUT_VOCERO_COL] = result[summary_col].apply(detect_vocero)
     result[OUTPUT_TONO_COL] = ""
     result[OUTPUT_TEMA_COL] = ""
     result[OUTPUT_SUBTEMA_COL] = ""
 
-    groups, texts = group_similar_news(result, title_col, summary_col, progress)
+    duplicate_rows = detect_duplicate_rows(result, medio_col, title_col, web_col, hyperlinks)
+    for row_idx in duplicate_rows:
+        result.at[row_idx, OUTPUT_TONO_COL] = "Duplicada"
+        result.at[row_idx, OUTPUT_TEMA_COL] = "-"
+        result.at[row_idx, OUTPUT_SUBTEMA_COL] = "-"
+        result.at[row_idx, OUTPUT_VOCERO_COL] = "-"
+
+    active_indices = [idx for idx in result.index if idx not in duplicate_rows]
+    if not active_indices:
+        progress.progress(1.0, "Completado")
+        return result, len(duplicate_rows)
+
+    active_df = result.loc[active_indices].reset_index(drop=True)
+
+    groups, texts = group_similar_news(active_df, title_col, summary_col, progress)
     total_groups = len(groups)
 
     for pos, group in enumerate(groups, start=1):
@@ -328,7 +426,7 @@ def process_dataframe(df, title_col, summary_col, progress):
 
         photo_rows = [
             i for i in group
-            if is_fcf_photo_summary(result.at[i, summary_col])
+            if is_fcf_photo_summary(active_df.at[i, summary_col])
         ]
 
         normal_rows = [i for i in group if i not in photo_rows]
@@ -344,24 +442,40 @@ def process_dataframe(df, title_col, summary_col, progress):
                     OUTPUT_SUBTEMA_COL: "Sin subtema",
                 }
             for row_idx in normal_rows:
-                result.at[row_idx, OUTPUT_TONO_COL] = classification[OUTPUT_TONO_COL]
-                result.at[row_idx, OUTPUT_TEMA_COL] = classification[OUTPUT_TEMA_COL]
-                result.at[row_idx, OUTPUT_SUBTEMA_COL] = classification[OUTPUT_SUBTEMA_COL]
+                original_idx = active_indices[row_idx]
+                result.at[original_idx, OUTPUT_TONO_COL] = classification[OUTPUT_TONO_COL]
+                result.at[original_idx, OUTPUT_TEMA_COL] = classification[OUTPUT_TEMA_COL]
+                result.at[original_idx, OUTPUT_SUBTEMA_COL] = classification[OUTPUT_SUBTEMA_COL]
 
         for row_idx in photo_rows:
-            result.at[row_idx, OUTPUT_TONO_COL] = "Neutro"
-            result.at[row_idx, OUTPUT_TEMA_COL] = "Institucional"
-            result.at[row_idx, OUTPUT_SUBTEMA_COL] = "Foto"
+            original_idx = active_indices[row_idx]
+            result.at[original_idx, OUTPUT_TONO_COL] = "Neutro"
+            result.at[original_idx, OUTPUT_TEMA_COL] = "Institucional"
+            result.at[original_idx, OUTPUT_SUBTEMA_COL] = "Foto"
 
     progress.progress(1.0, "Completado")
-    return result
+    return result, len(duplicate_rows)
 
 
-def dataframe_to_excel(df):
+def dataframe_to_excel(df, hyperlinks=None):
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
         df.to_excel(writer, index=False, sheet_name="Analisis FCF")
         ws = writer.book["Analisis FCF"]
+        header_positions = {normalize_text(cell.value): cell.column for cell in ws[1]}
+        hyperlink_font = Font(color="0563C1", underline="single")
+
+        for row_index, row_links in (hyperlinks or {}).items():
+            excel_row = row_index + 2
+            for column_name in ("LINK", "WEB"):
+                target = row_links.get(column_name)
+                column_position = header_positions.get(normalize_text(column_name))
+                if target and column_position:
+                    cell = ws.cell(row=excel_row, column=column_position)
+                    cell.value = "Link"
+                    cell.hyperlink = target
+                    cell.font = hyperlink_font
+
         header_fill = PatternFill("solid", fgColor="1F4E79")
         header_font = Font(color="FFFFFF", bold=True)
         for cell in ws[1]:
@@ -391,7 +505,9 @@ def main():
         return
 
     try:
-        df = pd.read_excel(uploaded, engine="openpyxl")
+        xlsx_bytes = uploaded.getvalue()
+        hyperlinks = extract_embedded_links(xlsx_bytes)
+        df = pd.read_excel(io.BytesIO(xlsx_bytes), engine="openpyxl")
     except Exception as exc:
         st.error(f"No se pudo leer el XLSX: {exc}")
         return
@@ -400,6 +516,7 @@ def main():
     summary_col = get_column(df, ["RESUMEN", "Resumen", "Resumen - Aclaracion", "Resumen - Aclaración"])
     medio_col = get_column(df, ["NOMBRE DE MEDIO", "Nombre de Medio", "Medio"])
     region_col = get_column(df, ["REGION", "Región"])
+    web_col = get_column(df, ["WEB", "Web"])
 
     if not title_col or not summary_col or not medio_col or not region_col:
         st.error("No encontre las columnas requeridas: NOMBRE DE MEDIO, REGION, TÍTULO y RESUMEN.")
@@ -431,20 +548,31 @@ def main():
         progress = st.progress(0, "Iniciando...")
         start = time.time()
         with st.spinner("Procesando archivo..."):
-            output = process_dataframe(df, title_col, summary_col, progress)
+            output, duplicate_count = process_dataframe(
+                df,
+                title_col,
+                summary_col,
+                medio_col,
+                web_col,
+                hyperlinks,
+                progress,
+            )
         elapsed = time.time() - start
 
         st.session_state["fcf_output"] = output
+        st.session_state["fcf_hyperlinks"] = hyperlinks
+        st.session_state["fcf_duplicates"] = duplicate_count
         st.session_state["fcf_elapsed"] = elapsed
 
     if "fcf_output" in st.session_state:
         output = st.session_state["fcf_output"]
         st.subheader("Resultado")
         st.caption(f"Tiempo de procesamiento: {st.session_state.get('fcf_elapsed', 0):.0f}s")
+        st.caption(f"Duplicadas marcadas: {st.session_state.get('fcf_duplicates', 0)}")
         st.dataframe(output.head(50), use_container_width=True)
         st.download_button(
             "Descargar XLSX clasificado",
-            data=dataframe_to_excel(output),
+            data=dataframe_to_excel(output, st.session_state.get("fcf_hyperlinks")),
             file_name="Analisis_FCF.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
