@@ -1,14 +1,10 @@
-
----
-
 ```markdown
-  █████╗ ███╗   ██╗██████╗ ██╗     ██╗███████╗██╗███████╗    ███████╗██╗  ██╗███████╗
- ██╔══██╗████╗  ██║██╔══██╗██║     ██║██╔════╝██║██╔════╝    ██╔════╝██║  ██║██╔════╝
- ███████║██╔██╗ ██║██████╔╝██║     ██║███████╗██║███████╗    █████╗  ███████║█████╗  
- ██╔══██║██║╚██╗██║██╔══██╗██║     ██║╚════██║██║╚════██║    ██╔══╝  ██╔══██║██╔══╝  
- ██║  ██║██║ ╚████║██████╔╝███████╗██║███████║██║███████║    ██║     ██║  ██║██║     
- ╚═╝  ╚═╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝╚══════╝╚═╝╚══════╝    ╚═╝     ╚═╝  ╚═╝╚═╝     
-```
+ ███████╗██████╗ ███████╗     █████╗ ██████╗ ██╗
+ ██╔════╝██╔════╝██╔════╝    ██╔══██╗██╔══██╗██║
+ █████╗  ██║     █████╗  ─── ███████║██████╔╝██║
+ ██╔══╝  ██║     ██╔══╝  ─── ██╔══██║██╔═══╝ ██║
+ ██║     ╚█████╗ ██║         ██║  ██║██║     ██║
+ ╚═╝      ╚════╝ ╚═╝         ╚═╝  ╚═╝╚═╝     ╚═╝
 
 > **Sistema Inteligente de Monitoreo, Clasificación Reputacional e Inteligencia de Medios para la Federación Colombiana de Fútbol (FCF)**
 
@@ -34,9 +30,9 @@
 
 ## ⚽ Descripción General
 
-**Análisis FCF** es una aplicación Web interactiva desarrollada en Streamlit que automatiza el análisis de prensa y monitoreo de reputación mediática para la **Federación Colombiana de Fútbol**. 
+**FCF-API / Análisis FCF** es una aplicación Web interactiva desarrollada en Streamlit que automatiza el análisis de prensa y monitoreo de reputación mediática para la **Federación Colombiana de Fútbol**. 
 
-A través de modelos de IA de **OpenAI** (`gpt-4.1-nano` y `text-embedding-3-small`), el sistema procesa dossieres masivos en formato Excel, elimina duplicados, agrupa noticias semánticamente similares y clasifica automáticamente cada impacto en categorías, temas, subtemas específicos y voceros.
+A través de modelos de IA de **OpenAI** (`gpt-4.1-nano-2025-04-14` y `text-embedding-3-small`), el sistema procesa dossieres masivos en formato Excel, elimina duplicados, agrupa noticias semánticamente similares y clasifica automáticamente cada impacto en categorías, temas, subtemas específicos y voceros.
 
 ---
 
@@ -104,8 +100,8 @@ A través de modelos de IA de **OpenAI** (`gpt-4.1-nano` y `text-embedding-3-sma
 
 1. **Clonar el repositorio:**
    ```bash
-   git clone https://github.com/tu-usuario/analisis-fcf.git
-   cd analisis-fcf
+   git clone https://github.com/tu-usuario/FCF-API.git
+   cd FCF-API
    ```
 
 2. **Crear y activar un entorno virtual:**
@@ -158,7 +154,7 @@ El archivo opcional `Configuracion.xlsx` permite mapear automáticamente medios 
 ## 📁 Estructura del Proyecto
 
 ```
-analisis-fcf/
+FCF-API/
 ├── .streamlit/
 │   └── secrets.toml         # Configuración de credenciales locales
 ├── app.py                   # Aplicación principal de Streamlit y lógica de IA
