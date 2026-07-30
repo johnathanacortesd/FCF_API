@@ -231,5 +231,5 @@ FCF-API/
 ---
 
 <p align="center">
-  <sub>Desarrollado para la <b>Federación Colombiana de Fútbol (FCF)</b> | Web App: <a href="https://fcf-api.streamlit.app/">fcf-api.streamlit.app</a></sub>
+  <sub>Desarrollado por Johnathan Cortés para GlobalNews Group y el cliente <b>Federación Colombiana de Fútbol (FCF)</b> | Web App: <a href="https://fcf-api.streamlit.app/">fcf-api.streamlit.app</a></sub>
 </p>
