@@ -112,7 +112,7 @@ streamlit run app.py
 
 ## 👤 Autoría
 
-Desarrollado por **Johnathan Cortés** para **GlobalNews Group**, como parte de sus soluciones de inteligencia de medios y monitoreo de prensa para la Federación Colombiana de Fútbol.
+Desarrollado por **Johnathan Cortés** para **GlobalNews Group**, como parte de sus soluciones de inteligencia de medios y monitoreo de noticias para la Federación Colombiana de Fútbol.
 
 ---
 
