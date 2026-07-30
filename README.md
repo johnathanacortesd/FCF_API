@@ -1,13 +1,6 @@
 # Analisis FCF
 
-App alternativa para clasificar noticias de la Federacion Colombiana de Futbol.
-
-## Ejecutar
-
-```powershell
-cd FCF-API
-streamlit run app.py
-```
+App para clasificar noticias de la Federacion Colombiana de Futbol.
 
 La app espera un archivo `.xlsx` con el formato FCF:
 
