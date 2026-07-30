@@ -1,10 +1,11 @@
-```markdown
+```text
   ███████╗ ██████╗  ███████╗         █████╗  ██████╗  ██╗
   ██╔════╝██╔════╝  ██╔════╝        ██╔══██╗ ██╔══██╗ ██║
   █████╗  ██║       █████╗   ───    ███████║ ██████╔╝ ██║
   ██╔══╝  ██║       ██╔══╝   ───    ██╔══██║ ██╔═══╝  ██║
   ██║     ╚██████╗  ██║             ██║  ██║ ██║      ██║
   ╚═╝      ╚═════╝  ╚═╝             ╚═╝  ╚═╝ ╚═╝      ╚═╝
+```
 
 > **Sistema Inteligente de Monitoreo, Clasificación Reputacional e Inteligencia de Medios para la Federación Colombiana de Fútbol (FCF)**
 
@@ -16,7 +17,7 @@
 
 ## 🚀 App en Vivo
 
-🔗 **Acceso a la plataforma:** [https://fcf-api.streamlit.app/](https://fcf-api.streamlit.app/)
+🔗 **Acceso a la plataforma web:** [https://fcf-api.streamlit.app/](https://fcf-api.streamlit.app/)
 
 ---
 
@@ -35,38 +36,37 @@
 
 ## ⚽ Descripción General
 
-**FCF-API** (Análisis FCF) es un sistema avanzado de inteligencia de medios y análisis reputacional diseñado exclusivamente para procesar, limpiar y clasificar información de prensa de la **Federación Colombiana de Fútbol (FCF)**.
+**FCF-API** es un sistema inteligente de análisis reputacional y procesamiento masivo de prensa desarrollado para la **Federación Colombiana de Fútbol (FCF)**.
 
-Utilizando modelos de Lenguaje y Embeddings de **OpenAI** (`gpt-4.1-nano-2025-04-14` y `text-embedding-3-small`), la herramienta analiza grandes volúmenes de noticias contenidas en archivos Excel, deduplica registros, agrupa publicaciones por similitud semántica y clasifica automáticamente el **Impacto**, **TEMA**, **SUBTEMA** y **VOCERO**.
+Impulsado por modelos de Lenguaje y Embeddings de **OpenAI** (`gpt-4.1-nano-2025-04-14` y `text-embedding-3-small`), el sistema recibe dossieres de noticias en formato Excel, normaliza medios regionales, detecta registros duplicados, agrupa publicaciones por similitud semántica y clasifica automáticamente cada impacto en **Impacto (Tono)**, **TEMA**, **SUBTEMA** y **VOCERO**.
 
 ---
 
 ## ✨ Características Principales
 
-* 🔍 **Desduplicación Multinivel**:
-  * Filtrado por enlace exacto (`WEB` / `LINK`).
-  * Coincidencia exacta de títulos y resúmenes.
-  * Comparación difusa (Fuzzy Matching) basada en ratio de similitud (`SequenceMatcher`).
+* 🔍 **Desduplicación Inteligente**:
+  * Filtrado automático por URLs (`WEB` / `LINK`).
+  * Detección de títulos idénticos y coincidencia difusa (Fuzzy Matching).
 
-* 🧠 **Agrupamiento Semántico (Vector Clustering)**:
-  * Generación de embeddings vectoriales a través de OpenAI `text-embedding-3-small`.
-  * Algoritmo de conjuntos disjuntos **DSU (Disjoint Set Union)** con cálculo de similitud del coseno para agrupar notas con la misma temática sin repetir llamadas innecesarias al LLM.
+* 🧠 **Clustering Semántico (Vector Embeddings)**:
+  * Vectorización de resúmenes y títulos mediante `text-embedding-3-small`.
+  * Agrupación eficiente usando **Disjoint Set Union (DSU)** y similitud del coseno para evitar consultas repetitivas al modelo LLM.
 
-* 🏷️ **Clasificación Automática con Inteligencia Artificial**:
+* 🏷️ **Clasificación Automatizada por IA**:
   * **Impacto**: Positivo, Negativo, Neutro o Duplicada.
   * **TEMA**: Institucional, Torneos - Copas - Ligas, Selecciones, Gestión, Jugadores, Entorno.
-  * **SUBTEMA**: Inferencia de etiquetas específicas (ej. *Partidos del Mundial*, *Partido Eliminatorias*, *Partido ante [Rival]*).
-  * **VOCERO**: Detección inteligente de voceros (ej. *Ramón Jesurun*).
+  * **SUBTEMA**: Asignación contextual específica (ej. *Partidos del Mundial*, *Partido Eliminatorias*, *Partido ante [Rival]*).
+  * **VOCERO**: Detección de voceros institucionales (ej. *Ramón Jesurun*).
 
-* 🗺️ **Enriquecimiento Regional Automático**:
-  * Búsqueda dinámica y mapeo automatizado `NOMBRE DE MEDIO` $\rightarrow$ `REGION` consultando el diccionario de `Configuracion.xlsx`.
+* 🗺️ **Lookup de Regiones**:
+  * Cruce automático `NOMBRE DE MEDIO` $\rightarrow$ `REGION` consultando el diccionario de `Configuracion.xlsx`.
 
 * 🎨 **Interfaz de Usuario (UX/UI)**:
-  * Tema corporativo FCF (Azul `#173b7a`, Dorado `#d9a441`, Rojo `#c8202f`).
-  * Indicadores dinámicos de progreso y métricas de procesamiento en tiempo real.
+  * Estilo corporativo FCF (Azul `#173b7a`, Dorado `#d9a441`, Rojo `#c8202f`).
+  * Indicadores visuales de avance, tiempos de respuesta y métricas de procesamiento.
 
-* 📊 **Exportación Profesional a Excel**:
-  * Formateo de estilos, ancho automático de columnas y conservación bidireccional de hipervínculos web (`openpyxl`).
+* 📊 **Exportación Profesional**:
+  * Descarga directa en `.xlsx` formateado, incluyendo preservación de enlaces incrustados.
 
 ---
 
@@ -115,7 +115,7 @@ Utilizando modelos de Lenguaje y Embeddings de **OpenAI** (`gpt-4.1-nano-2025-04
 
 ### Pre-requisitos
 * **Python 3.10** o superior.
-* API Key de OpenAI habilitada.
+* API Key de OpenAI activa.
 
 ### Pasos para Ejecución Local
 
@@ -138,7 +138,7 @@ Utilizando modelos de Lenguaje y Embeddings de **OpenAI** (`gpt-4.1-nano-2025-04
 
 3. **Instalar las dependencias:**
    ```bash
-   pip install -r requirements.txt
+   pip install streamlit pandas numpy openpyxl openai scikit-learn unidecode
    ```
 
 4. **Ejecutar la aplicación:**
@@ -152,15 +152,15 @@ Utilizando modelos de Lenguaje y Embeddings de **OpenAI** (`gpt-4.1-nano-2025-04
 
 ### 1. Variables Secretas (`.streamlit/secrets.toml`)
 
-Crea la carpeta `.streamlit` en la raíz del proyecto y dentro añade el archivo `secrets.toml`:
+Crea la carpeta `.streamlit` en la raíz del proyecto y añade el archivo `secrets.toml`:
 
 ```toml
 OPENAI_API_KEY = "sk-proj-tu-api-key-de-openai-aqui"
 ```
 
-### 2. Archivo de Configuración de Regiones (`Configuracion.xlsx`)
+### 2. Configuración de Regiones (`Configuracion.xlsx`)
 
-El sistema busca automáticamente un archivo `Configuracion.xlsx` en la raíz para asociar medios con su región geográfica. Debe tener una estructura como la siguiente:
+El sistema consulta localmente el archivo `Configuracion.xlsx` para asociar medios con su región. Debe contar con la siguiente estructura básica:
 
 | NOMBRE DE MEDIO | REGION |
 | :--- | :--- |
@@ -176,11 +176,11 @@ El sistema busca automáticamente un archivo `Configuracion.xlsx` en la raíz pa
 ```text
 FCF-API/
 ├── .streamlit/
-│   └── secrets.toml         # Credenciales y claves de API (Streamlit Secrets)
-├── app.py                   # Código principal de la aplicación Streamlit e integración IA
+│   └── secrets.toml         # Claves privadas (OpenAI API Key)
+├── app.py                   # Script principal de Streamlit y lógica de IA
 ├── Configuracion.xlsx       # Matriz de consulta Medio -> Región
-├── requirements.txt         # Lista de dependencias del proyecto
-└── README.md                # Documentación general del repositorio
+├── README.md                # Documentación principal del repositorio
+└── requirements.txt         # Dependencias del proyecto
 ```
 
 ---
@@ -188,32 +188,29 @@ FCF-API/
 ## 🏷️ Taxonomía y Criterios de Clasificación
 
 ### **1. Categorías de Tema (`TEMA`)**
-* **Institucional**: Declaraciones oficiales, comunicados, temas corporativos o de marca FCF.
+* **Institucional**: Comunicados oficiales, pronunciamientos directivos o uso de marca FCF.
 * **Torneos - Copas - Ligas**: Liga BetPlay, Copa Colombia, Torneos CONMEBOL, FIFA, etc.
-* **Selecciones**: Selección Colombia Masculina, Femenina, Sub-20, Sub-17, Mayores.
-* **Gestión**: Decisiones directivas, logística, infraestructura, contratos y convenios.
-* **Jugadores**: Noticias individuales centrándose en desempeño o novedades de futbolistas.
-* **Entorno**: Noticias contextuales del fútbol nacional e internacional sin acción directa FCF.
+* **Selecciones**: Selecciones Colombia (Masculina, Femenina, Sub-20, Sub-17, Mayores).
+* **Gestión**: Decisiones directivas, logística, acuerdos comerciales, infraestructura.
+* **Jugadores**: Contenido enfocado en el desempeño o novedades individuales de futbolistas.
+* **Entorno**: Temas del fútbol nacional e internacional sin relación directa con la FCF.
 
 ### **2. Tono / Impacto (`Impacto`)**
-* 🟢 **Positivo**: Resalta logros, victorias, buenas prácticas o reconocimientos.
-* 🔴 **Negativo**: Contiene críticas, señalamientos, controversias o afectación reputacional.
-* ⚪ **Neutro**: Reportes informativos genéricos sin juicio de valor implícito.
-* ⬛ **Duplicada**: Filas identificadas como repetidas de otra noticia ya procesada.
+* 🟢 **Positivo**: Enfoque favorable, reconocimientos, gestión destacada o triunfos.
+* 🔴 **Negativo**: Críticas, controversias, cuestionamientos o impacto reputacional adverso.
+* ⚪ **Neutro**: Notas puramente informativas sin sesgo implícito.
+* ⬛ **Duplicada**: Filas identificadas como copias de otro registro ya analizado.
 
 ### **3. Casos Específicos & Normalizaciones**
-* **Uso de Foto FCF**: `Institucional / Foto` (Si el texto indica *"Foto tomada de FCF"*).
-* **Mención de Logo**: `Institucional / Logo` (Si la noticia no menciona a la FCF explícitamente pero la incluye).
-* **Partido de Selección**: Si se detecta un encuentro, el subtema se normaliza dinámicamente:
-  * *Partidos del Mundial*
-  * *Partido Eliminatorias*
-  * *Partido ante [Selección Rival]*
+* **Fotografía FCF**: `Institucional / Foto` (Si el texto indica *"Foto tomada de FCF"*).
+* **Uso de Logo**: `Institucional / Logo` (Si la noticia incluye el logo sin mención explícita en texto).
+* **Partidos de Selección**: Normalización automática a `Partidos del Mundial`, `Partido Eliminatorias` o `Partido ante [Rival]`.
 
 ---
 
 ## 📊 Formatos de Entrada y Salida
 
-### **Columnas Requeridas en el Dossier de Entrada (.xlsx)**
+### **Columnas Entrada (.xlsx)**
 * `ID`
 * `FECHA`
 * `HORA`
@@ -223,17 +220,16 @@ FCF-API/
 * `SECCIÓN`
 * `TÍTULO`
 * `RESUMEN`
-* `LINK` / `WEB` *(Opcional pero recomendado)*
+* `LINK` / `WEB` *(Opcional)*
 
-### **Columnas Agregadas en la Salida (.xlsx)**
+### **Columnas Asignadas en Salida (.xlsx)**
 * `Impacto` *(Positivo, Negativo, Neutro, Duplicada)*
-* `TEMA` *(Categoría asignada)*
-* `SUBTEMA` *(Etiqueta detallada)*
-* `VOCERO` *(Detección del portavoz)*
+* `TEMA` *(Categoría principal)*
+* `SUBTEMA` *(Etiqueta contextual)*
+* `VOCERO` *(Portavoz detectado)*
 
 ---
 
 <p align="center">
-  <sub>Desarrollado para la <b>Federación Colombiana de Fútbol (FCF)</b> | App: <a href="https://fcf-api.streamlit.app/">fcf-api.streamlit.app</a></sub>
+  <sub>Desarrollado para la <b>Federación Colombiana de Fútbol (FCF)</b> | Web App: <a href="https://fcf-api.streamlit.app/">fcf-api.streamlit.app</a></sub>
 </p>
-```
